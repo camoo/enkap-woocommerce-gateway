@@ -47,8 +47,8 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
     {
         $this->form_fields = array(
             'enabled' => array(
-                'title' => 'Enable/Disable',
-                'label' => 'Enable E-nkap Payment',
+                'title' => __('Enable/Disable', 'wp_enkap'),
+                'label' => __('Enable E-nkap Payment', 'wp_enkap'),
                 'type' => 'checkbox',
                 'description' => '',
                 'default' => 'no'
@@ -56,24 +56,33 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
             'title' => array(
                 'title' => 'Title',
                 'type' => 'text',
-                'description' => 'This controls the title which the user sees during checkout.',
-                'default' => 'E-nkap Payment. Smobilpay for e-commerce',
+                'description' => __('This controls the title which the user sees during checkout.', 'wp_enkap'),
+                'default' => __('E-nkap Payment. Smobilpay for e-commerce', 'wp_enkap'),
                 'desc_tip' => true,
             ),
             'description' => array(
                 'title' => 'Description',
                 'type' => 'textarea',
-                'description' => 'This controls the description which the user sees during checkout.',
-                'default' => 'Pay with your mobile phone via E-nkap payment gateway.',
+                'description' => __('This controls the description which the user sees during checkout.', 'wp_enkap'),
+                'default' => __('Pay with your mobile phone via E-nkap payment gateway.', 'wp_enkap'),
             ),
             'testmode' => array(
                 'title' => 'Test mode',
                 'label' => 'Enable Test Mode',
                 'type' => 'checkbox',
-                'description' => 'Place the payment gateway in test mode using test API keys.',
+                'description' => __('Place the payment gateway in test mode using test API keys.', 'wp_enkap'),
                 'default' => 'yes',
                 'desc_tip' => true,
             ),
+            'enkap_currency' => [
+                'title' => __('Currency', 'wp_enkap'),
+                'label' => 'Enkap Currency',
+                'type' => 'select',
+                'description' => __('Define the currency to place your payments','wp_enkap'),
+                'default' => 'XAF',
+                'options' => ['XAF' => __('CFA-Franc BEAC', 'wp_enkap')],
+                'desc_tip' => true,
+            ],
             'enkap_key' => array(
                 'title' => 'Key',
                 'type' => 'text'
@@ -126,7 +135,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
             'customerName' => $order_data['billing']['first_name'] . ' ' . $order_data['billing']['last_name'],
             'totalAmount' => (float)$order_data['total'],
             'description' => 'Payment from ' . get_bloginfo('name'),
-            'currency' => 'XAF',
+            'currency' => $this->get_option('enkap_currency'),
             'items' => []
         ];
         foreach ($wc_order->get_items() as $item) {
