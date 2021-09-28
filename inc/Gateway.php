@@ -10,16 +10,15 @@ use Enkap\OAuth\Model\CallbackUrl;
 use Throwable;
 use WC_Payment_Gateway;
 
-/**
- * Description of E_Nkap
- *
- * @author Sergio
- */
+defined('ABSPATH') || exit;
+
+
 class WC_Enkap_Gateway extends WC_Payment_Gateway
 {
     private $_key;
     private $_secret;
     private $instructions;
+    private bool $testmode;
 
     function __construct()
     {
@@ -49,7 +48,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
         $this->form_fields = array(
             'enabled' => array(
                 'title' => 'Enable/Disable',
-                'label' => 'Enable E-nkap payment',
+                'label' => 'Enable E-nkap Payment',
                 'type' => 'checkbox',
                 'description' => '',
                 'default' => 'no'
@@ -58,7 +57,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
                 'title' => 'Title',
                 'type' => 'text',
                 'description' => 'This controls the title which the user sees during checkout.',
-                'default' => 'E-nkap payment',
+                'default' => 'E-nkap Payment. Smobilpay for e-commerce',
                 'desc_tip' => true,
             ),
             'description' => array(
@@ -120,7 +119,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
 
         $order_data = $wc_order->get_data();
 
-        $merchantReferenceId = Plugin::encode_ID($order_data['id']);
+        $merchantReferenceId = wp_generate_uuid4();
         $dataData = [
             'merchantReference' => $merchantReferenceId,
             'email' => $order_data['billing']['email'],
@@ -150,7 +149,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
             // Empty cart
             WC()->cart->empty_cart();
 
-            // redirect User to Enkap System
+            $this->logEnkapPayment($order_id, $merchantReferenceId, $response->getOrderTransactionId());
             return array(
                 'result' => 'success',
                 'redirect' => $response->getRedirectUrl()
@@ -184,8 +183,8 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
         ) {
             return;
         }
-        $order_id = filter_input(INPUT_GET, 'order_id');
-        $order_id = Plugin::decode_ID($order_id);
+        $merchantReferenceId = filter_input(INPUT_GET, 'merchantReferenceId');
+        $order_id = Plugin::getWcOrderIdByMerchantReferenceId($merchantReferenceId);
         $status = filter_input(INPUT_GET, 'status');
         if ($status && wc_get_order($order_id)) {
             $this->processWebhook($order_id, $status);
@@ -240,5 +239,19 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
     private function processWebhookFailed($order_id)
     {
         wc_get_order($order_id);
+    }
+
+    protected function logEnkapPayment(int $orderId, string $merchantReferenceId, string $orderTransactionId)
+    {
+        global $wpdb;
+
+        $wpdb->insert(
+            $wpdb->prefix . "wc_enkap_payments",
+            [
+                'wc_order_id' => $orderId,
+                'order_transaction_id' => $orderTransactionId,
+                'merchant_reference_id' => $merchantReferenceId,
+            ]
+        );
     }
 }

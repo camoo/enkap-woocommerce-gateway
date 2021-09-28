@@ -6,7 +6,7 @@
  */
 
 namespace Camoo\Enkap\WooCommerce;
-
+defined('ABSPATH') || exit;
 if (!class_exists('\\Camoo\\Enkap\\WooCommerce\\Plugin')):
 
     class Plugin
@@ -52,20 +52,20 @@ if (!class_exists('\\Camoo\\Enkap\\WooCommerce\\Plugin')):
         public function register()
         {
             require_once(ABSPATH . 'wp-admin/includes/plugin.php');
-
+            require_once __DIR__ . '/InstallEnkap.php';
             // do not register when WooCommerce is not enabled
             if (!is_plugin_active('woocommerce/woocommerce.php')) {
                 return;
             }
-
-            if (0 && is_admin()) {
+            register_activation_hook($this->pluginPath, [InstallEnkap::class, 'install']);
+            /*if (is_admin()) {
                 add_action('admin_menu', array($this, 'onAdminMenu'));
                 add_action('admin_init', array($this, 'dropdaySettingsInit'));
-            }
+            }*/
 
-            add_filter('woocommerce_payment_gateways', array($this, 'onAddGatewayClass'));
-            add_filter('plugin_action_links_' . plugin_basename($this->pluginPath), array($this, 'onPluginActionLinks'), 1, 1);
-            add_action('plugins_loaded', array($this, 'onInit'));
+            add_filter('woocommerce_payment_gateways', [$this, 'onAddGatewayClass']);
+            add_filter('plugin_action_links_' . plugin_basename($this->pluginPath), [$this, 'onPluginActionLinks'], 1, 1);
+            add_action('plugins_loaded', [$this, 'onInit']);
         }
 
         public function onAddGatewayClass($gateways)
@@ -100,21 +100,22 @@ if (!class_exists('\\Camoo\\Enkap\\WooCommerce\\Plugin')):
             return add_query_arg('wc-api', $endpoint, trailingslashit(get_home_url()));
         }
 
-        public static function encode_ID($id)
-        {
-            return base64_encode(uniqid('WC', true) . '_' . $id);
-        }
 
-        public static function decode_ID($id_code)
+        public static function getWcOrderIdByMerchantReferenceId($id_code)
         {
-            $id_code = base64_decode($id_code, true);
-            if ($id_code) {
-                $id_code = explode('_', $id_code);
-                if (isset($id_code[1])) {
-                    return (int)$id_code[1];
-                }
+            global $wpdb;
+            if (!wp_is_uuid($id_code)) {
+                return null;
             }
-            return false;
+
+            $db_prepare = $wpdb->prepare("SELECT * FROM `{$wpdb->prefix}wc_enkap_payments` WHERE `merchant_reference_id` = %s", $id_code);
+            $payment = $wpdb->get_row($db_prepare);
+
+            if (!$payment) {
+                return null;
+            }
+
+            return $payment->wc_order_id;
         }
     }
 
