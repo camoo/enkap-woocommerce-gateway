@@ -31,7 +31,7 @@ require_once(__DIR__ . '/inc/Plugin.php');
     'Gateway',
     sprintf('%s<br/><a href="%s" target="_blank">%s</a><br/><a href="%s" target="_blank">%s</a>',
         __('E-nkap payment gateway', 'wp_enkap'),
-        'https://camoo.hosting/contact-us/',
+        'https://enkap.cm/#comptenkap',
         __('Do you have any questions or requests?', 'wp_enkap'),
         'https://github.com/camoo/enkap-oauth',
         __('Do you like our plugin and can recommend to others?', 'wp_enkap')),
