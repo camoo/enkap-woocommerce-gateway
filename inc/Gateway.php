@@ -93,14 +93,25 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
                 'options' => ['XAF' => __('CFA-Franc BEAC', 'wp_enkap')],
                 'desc_tip' => true,
             ],
-            'enkap_key' => array(
-                'title' => 'Key',
-                'type' => 'text'
-            ),
-            'enkap_secret' => array(
-                'title' => 'Secret',
-                'type' => 'password'
-            )
+            'api_details' => [
+                'title' => __('API credentials', 'woocommerce'),
+                'type' => 'title',
+                'description' => sprintf(__('Enter your E-nkap API credentials to process Payments via E-nkap. Learn how to access your <a href="%s">E-nkap API Credentials</a>.', 'wp_enkap'), 'https://enkap.cm/faq/'),
+            ],
+            'enkap_key' => [
+                'title' => __('Consumer Key', 'wp_enkap'),
+                'type' => 'text',
+                'description' => __('Get your API Consumer Key from E-nkap.', 'wp_enkap'),
+                'default' => '',
+                'desc_tip' => true,
+            ],
+            'enkap_secret' => [
+                'title' => __('Consumer Secret', 'wp_enkap'),
+                'type' => 'password',
+                'description' => __('Get your API Consumer Secret from E-nkap.', 'wp_enkap'),
+                'default' => '',
+                'desc_tip' => true,
+            ],
         );
     }
 
