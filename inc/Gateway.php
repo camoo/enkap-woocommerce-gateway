@@ -2,6 +2,7 @@
 
 namespace Camoo\Enkap\WooCommerce;
 
+use Enkap\OAuth\Lib\Helper;
 use Enkap\OAuth\Model\Order;
 use Enkap\OAuth\Model\Status;
 use Enkap\OAuth\Services\OrderService;
@@ -213,11 +214,17 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
         ) {
             return;
         }
-        $merchantReferenceId = filter_input(INPUT_GET, 'merchantReferenceId');
+        $merchantReferenceId = Helper::getOderMerchantIdFromUrl();
+
         $order_id = Plugin::getWcOrderIdByMerchantReferenceId($merchantReferenceId);
         $status = filter_input(INPUT_GET, 'status');
+
         if ($status && wc_get_order($order_id)) {
             $this->processWebhook($order_id, $status);
+        }
+        $shop_page_url = get_permalink(wc_get_page_id('shop'));
+        if (wp_redirect($shop_page_url)) {
+            exit;
         }
     }
 

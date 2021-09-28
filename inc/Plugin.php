@@ -66,6 +66,7 @@ if (!class_exists('\\Camoo\\Enkap\\WooCommerce\\Plugin')):
             add_filter('woocommerce_payment_gateways', [$this, 'onAddGatewayClass']);
             add_filter('plugin_action_links_' . plugin_basename($this->pluginPath), [$this, 'onPluginActionLinks'], 1, 1);
             add_action('plugins_loaded', [$this, 'onInit']);
+            register_activation_hook( $this->pluginPath, array( $this, 'flush_rules' ) );
         }
 
         public function onAddGatewayClass($gateways)
@@ -77,6 +78,22 @@ if (!class_exists('\\Camoo\\Enkap\\WooCommerce\\Plugin')):
         public function onInit()
         {
             $this->loadGatewayClass();
+            add_filter( 'init', array( $this, 'rewrite_rules' ) );
+        }
+        public function flush_rules()
+        {
+            $this->rewrite_rules();
+
+            flush_rewrite_rules();
+        }
+
+        public function rewrite_rules()
+        {
+            add_rewrite_rule( 'e-nkap/return/(.+?)/?$', 'index.php?wc-api=return_e_nkap&merchantReferenceId==$matches[1]', 'top');
+            add_rewrite_tag( '%merchantReferenceId%', '([^&]+)' );
+
+            add_rewrite_rule( 'e-nkap/notification/(.+?)/?$', 'index.php?wc-api=notification_e_nkap&merchantReferenceId==$matches[1]', 'top');
+            add_rewrite_tag( '%merchantReferenceId%', '([^&]+)' );
         }
 
         public function onPluginActionLinks($links)
