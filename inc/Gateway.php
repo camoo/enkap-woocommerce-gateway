@@ -18,7 +18,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
     private $_key;
     private $_secret;
     private $instructions;
-    private bool $testmode;
+    private $testmode;
 
     function __construct()
     {
@@ -34,6 +34,8 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
         $this->method_description = $this->get_option('description');
         $this->enabled = $this->get_option('enabled');
         $this->testmode = 'yes' === $this->get_option('testmode');
+        $this->description = $this->get_option('description');
+        $this->instructions = $this->get_option('instructions');
 
         $this->_key = $this->get_option('enkap_key');
         $this->_secret = $this->get_option('enkap_secret');
@@ -65,6 +67,14 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
                 'type' => 'textarea',
                 'description' => __('This controls the description which the user sees during checkout.', 'wp_enkap'),
                 'default' => __('Pay with your mobile phone via E-nkap payment gateway.', 'wp_enkap'),
+                'desc_tip' => true,
+            ),
+            'instructions' => array(
+                'title' => __('Instructions', 'woocommerce'),
+                'type' => 'textarea',
+                'description' => __('Instructions that will be added to the thank you page.', 'woocommerce'),
+                'default' => __('Secured Payment with Enkap. Smobilpay for e-commerce', 'wp_enkap'),
+                'desc_tip' => true,
             ),
             'testmode' => array(
                 'title' => 'Test mode',
@@ -78,7 +88,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
                 'title' => __('Currency', 'wp_enkap'),
                 'label' => 'Enkap Currency',
                 'type' => 'select',
-                'description' => __('Define the currency to place your payments','wp_enkap'),
+                'description' => __('Define the currency to place your payments', 'wp_enkap'),
                 'default' => 'XAF',
                 'options' => ['XAF' => __('CFA-Franc BEAC', 'wp_enkap')],
                 'desc_tip' => true,
