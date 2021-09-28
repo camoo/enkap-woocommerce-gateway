@@ -37,7 +37,7 @@ The plugin allows you to use Enkap payment gateway with the WooCommerce plugin. 
 * MySQL version 5.0 or greater.
 
 = Recommended Requirements =
-* Latest WordPress version.
+* The Latest WordPress version.
 * PHP version 5.6 or greater.
 * MySQL version 5.6 or greater.
 
@@ -54,3 +54,12 @@ This plugin is a FREE download.
 == Screenshots ==
 1. Easy configuration.
 2. Payment gateway selection.
+
+== Upgrade Notice ==
+N/A
+
+== Changelog ==
+N/A
+
+= 1.0.0 =
+* Start plugin

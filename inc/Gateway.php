@@ -1,11 +1,5 @@
 <?php
 
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-
 namespace Camoo\Enkap\WooCommerce;
 
 use Enkap\OAuth\Model\Order;
@@ -132,7 +126,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
             'email' => $order_data['billing']['email'],
             'customerName' => $order_data['billing']['first_name'] . ' ' . $order_data['billing']['last_name'],
             'totalAmount' => (float)$order_data['total'],
-            'description' => 'Payment from ' .get_bloginfo('name'),
+            'description' => 'Payment from ' . get_bloginfo('name'),
             'currency' => 'XAF',
             'items' => []
         ];
@@ -239,12 +233,12 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
 
     private function processWebhookCanceled($order_id)
     {
-      wc_get_order($order_id);
+        wc_get_order($order_id);
 
     }
 
     private function processWebhookFailed($order_id)
     {
-       wc_get_order($order_id);
+        wc_get_order($order_id);
     }
 }
