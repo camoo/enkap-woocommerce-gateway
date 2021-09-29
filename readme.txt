@@ -21,6 +21,17 @@ The plugin allows you to use Enkap payment gateway with the WooCommerce plugin. 
 * Pay with Express Union Mobile Money
 * Pay with SmobilPay Cash
 
+== Frequently Asked Questions ==
+= PHP 8 Support? =
+Yes! enkap-woocommerce-gateway is compatible with PHP version 8.0. We strongly recommend at least the use of PHP 7.3 to enjoy all the features offered
+
+= How to get my access keys? =
+All you need is just to [create an account](https://enkap.cm/) and then ask our team for consumer key pairs.
+
+= Can I receive cash payment ? =
+Yes! you can receive SmobilPay cash, if your buyer has an account with Smobilpay.
+
+
 == Installation ==
 = Installation =
 1. In your WordPress Dashboard go to \"Plugins\" -> \"Add Plugin\".
@@ -38,8 +49,8 @@ The plugin allows you to use Enkap payment gateway with the WooCommerce plugin. 
 
 = Recommended Requirements =
 * The Latest WordPress version.
-* PHP version 5.6 or greater.
-* MySQL version 5.6 or greater.
+* PHP version 7.3 or greater.
+* MySQL version 5.7 or greater.
 
 == Upgrade Notice ==
 
