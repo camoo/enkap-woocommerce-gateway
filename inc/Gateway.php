@@ -9,6 +9,7 @@ use Enkap\OAuth\Services\OrderService;
 use Enkap\OAuth\Services\CallbackUrlService;
 use Enkap\OAuth\Model\CallbackUrl;
 use Throwable;
+use WC_HTTPS;
 use WC_Payment_Gateway;
 
 defined('ABSPATH') || exit;
@@ -290,5 +291,17 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
                 'merchant_reference_id' => $merchantReferenceId,
             ]
         );
+    }
+
+    public function get_icon()
+    {
+        $icon_url = 'https://enkap.cm/';
+        $icon_html = '';
+        $icon = WC_HTTPS::force_https_url(plugin_dir_url(__FILE__). '/assets/images/e-nkap.png');
+        $icon_html .= '<img src="' . esc_attr($icon) . '" alt="' . esc_attr__('E-nkap acceptance mark', 'woocommerce') . '" />';
+
+        $icon_html .= sprintf('<a href="%1$s" class="about_e_nkap" onclick="javascript:window.open(\'%1$s\',\'WIEnkap\',\'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=yes, resizable=yes, width=1060, height=700\'); return false;">' . esc_attr__('What is E-nkap?', 'wp_enkap') . '</a>', esc_url($icon_url));
+
+        return apply_filters('woocommerce_gateway_icon', $icon_html, $this->id);
     }
 }

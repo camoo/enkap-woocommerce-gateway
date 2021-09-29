@@ -68,6 +68,15 @@ if (!class_exists('\\Camoo\\Enkap\\WooCommerce\\Plugin')):
             add_filter('plugin_action_links_' . plugin_basename($this->pluginPath), [$this, 'onPluginActionLinks'], 1, 1);
             add_action('plugins_loaded', [$this, 'onInit']);
             register_activation_hook( $this->pluginPath, array( $this, 'flush_rules' ) );
+            add_action('wp_enqueue_scripts', [ __CLASS__, 'enqueue_block_enkap_css_scripts' ]);
+        }
+
+        public static function enqueue_block_enkap_css_scripts(): void
+        {
+            wp_enqueue_style(
+                'enkap_style',
+                plugins_url('/assets/css/style.css', __FILE__)
+            );
         }
 
         public function onAddGatewayClass($gateways)

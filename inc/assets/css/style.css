@@ -1,0 +1,18 @@
+.woocommerce-checkout #payment .payment_method_e_nkap a.about_e_nkap {
+    position: absolute;
+    right: 0;
+}
+.woocommerce-checkout #payment .payment_method_e_nkap a.about_e_nkap {
+    padding: 0 10px;
+    background-color: var(--bs-white);
+    line-height: 30px;
+    border-radius: 20px;
+    font-weight: 600;
+    box-shadow: 0 0 10px -2px rgb(0 0 0 / 0.2);
+}
+
+.woocommerce-checkout #payment .payment_method_e_nkap .about_e_nkap {
+    float: right;
+    line-height: 52px;
+    font-size: .83em;
+}
