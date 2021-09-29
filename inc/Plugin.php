@@ -6,6 +6,7 @@
  */
 
 namespace Camoo\Enkap\WooCommerce;
+
 defined('ABSPATH') || exit;
 if (!class_exists('\\Camoo\\Enkap\\WooCommerce\\Plugin')):
 
@@ -114,12 +115,12 @@ if (!class_exists('\\Camoo\\Enkap\\WooCommerce\\Plugin')):
 
         public static function get_webhook_url($endpoint)
         {
-            return add_query_arg('wc-api', $endpoint, trailingslashit(get_home_url()));
+            return trailingslashit(get_home_url()). 'e-nkap/'.$endpoint;
         }
-
 
         public static function getWcOrderIdByMerchantReferenceId($id_code)
         {
+
             global $wpdb;
             if (!wp_is_uuid($id_code)) {
                 return null;
@@ -132,7 +133,15 @@ if (!class_exists('\\Camoo\\Enkap\\WooCommerce\\Plugin')):
                 return null;
             }
 
-            return $payment->wc_order_id;
+            return (int)$payment->wc_order_id;
+        }
+
+        public static function displayNotFoundPage()
+        {
+            global $wp_query;
+            $wp_query->set_404();
+            status_header(404);
+            get_template_part(404);
         }
     }
 

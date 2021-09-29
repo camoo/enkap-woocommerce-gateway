@@ -135,8 +135,8 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
         $setup = new CallbackUrlService($this->_key, $this->_secret);
         /** @var CallbackUrl $callBack */
         $callBack = $setup->loadModel(CallbackUrl::class);
-        $callBack->return_url = Plugin::get_webhook_url('return_' . $this->id);
-        $callBack->notification_url = Plugin::get_webhook_url('notification_' . $this->id);
+        $callBack->return_url = Plugin::get_webhook_url('return');
+        $callBack->notification_url = Plugin::get_webhook_url('notification');
         $setup->set($callBack);
     }
 
@@ -208,15 +208,15 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
 
     public function onReturn()
     {
-        if (('GET' !== $_SERVER['REQUEST_METHOD'])
-            || !isset($_GET['wc-api'])
-            || ('return_e_nkap' !== $_GET['wc-api'] && 'notification_e_nkap' !== $_GET['wc-api'])
-        ) {
-            return;
-        }
+
         $merchantReferenceId = Helper::getOderMerchantIdFromUrl();
 
         $order_id = Plugin::getWcOrderIdByMerchantReferenceId($merchantReferenceId);
+
+        if (empty($order_id))  {
+            Plugin::displayNotFoundPage();
+            exit();
+        }
         $status = filter_input(INPUT_GET, 'status');
 
         if ($status && wc_get_order($order_id)) {
