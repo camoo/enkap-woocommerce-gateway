@@ -14,6 +14,7 @@ use WC_Order;
 use WC_Order_Refund;
 use WC_Payment_Gateway;
 use WP_Error;
+use WP_REST_Server;
 
 defined('ABSPATH') || exit;
 
@@ -252,7 +253,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
             return new WP_error('invalid_request_id', 'Bad Request', ['status' => 400]);
         }
 
-        $requestBody = file_get_contents('php://input');
+        $requestBody = WP_REST_Server::get_raw_data();
         $bodyData = json_decode($requestBody, true);
 
         $status = $bodyData['status'];

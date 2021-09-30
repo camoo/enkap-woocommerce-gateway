@@ -203,7 +203,7 @@ if (!class_exists('\\Camoo\\Enkap\\WooCommerce\\Plugin')):
                 'wc-e-nkap/notification',
                 '/(.*?)',
                 [
-                    'methods' => WP_REST_Server::READABLE,
+                    'methods' => 'PUT',
                     'callback' => [new WC_Enkap_Gateway(), 'onNotification'],
                     'permission_callback' => '__return_true',
                 ]
