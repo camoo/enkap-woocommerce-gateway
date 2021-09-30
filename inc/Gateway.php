@@ -10,7 +10,10 @@ use Enkap\OAuth\Services\CallbackUrlService;
 use Enkap\OAuth\Model\CallbackUrl;
 use Throwable;
 use WC_HTTPS;
+use WC_Order;
+use WC_Order_Refund;
 use WC_Payment_Gateway;
+use WP_Error;
 
 defined('ABSPATH') || exit;
 
@@ -177,12 +180,13 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
             $order->fromStringArray($dataData);
             $response = $orderService->place($order);
 
-            $wc_order->update_status('on-hold', __('Awaiting E-Nkap payment confirmation', Plugin::DOMAIN_TEXT));
+            $wc_order->update_status('on-hold', __('Awaiting E-nkap payment confirmation', Plugin::DOMAIN_TEXT));
 
             // Empty cart
             WC()->cart->empty_cart();
 
             $this->logEnkapPayment($order_id, $merchantReferenceId, $response->getOrderTransactionId());
+            $wc_order->add_order_note('Your order is under process! Thank you!', true);
             return array(
                 'result' => 'success',
                 'redirect' => $response->getRedirectUrl()
@@ -215,14 +219,14 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
 
         $order_id = Plugin::getWcOrderIdByMerchantReferenceId($merchantReferenceId);
 
-        if (empty($order_id))  {
+        if (empty($order_id)) {
             Plugin::displayNotFoundPage();
             exit();
         }
         $status = filter_input(INPUT_GET, 'status');
 
-        if ($status && wc_get_order($order_id)) {
-            $this->processWebhook($order_id, $status);
+        if ($status && ($order = wc_get_order($order_id))) {
+            $this->processWebhook($order, sanitize_text_field($status));
         }
         $shop_page_url = get_permalink(wc_get_page_id('shop'));
         if (wp_redirect($shop_page_url)) {
@@ -233,51 +237,83 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
     public function onNotification()
     {
 
+        $merchantReferenceId = Helper::getOderMerchantIdFromUrl();
+
+        $orderId = Plugin::getWcOrderIdByMerchantReferenceId($merchantReferenceId);
+
+        if (empty($orderId)) {
+            return new WP_error('invalid_request_id', 'Bad Request', ['status' => 400]);
+        }
+
+        $requestBody = file_get_contents('php://input');
+        $bodyData = json_decode($requestBody, true);
+
+        $status = $bodyData['status'];
+
+        if (empty($status)) {
+            return new WP_error('invalid_request_status', 'Bad Request', ['status' => 400]);
+        }
+
+        $order = wc_get_order($orderId);
+        if ($order) {
+            $this->processWebhook($order, sanitize_text_field($status));
+        }
+        return "Status Updated To " . $order->get_status();
     }
 
-    public function processWebhook($order_id, $status)
+    public function processWebhook($order, $status)
     {
         switch ($status) {
             case Status::IN_PROGRESS_STATUS :
             case Status::CREATED_STATUS :
-                $this->processWebhookProgress($order_id);
+                $this->processWebhookProgress($order);
                 break;
             case Status::CONFIRMED_STATUS :
-                $this->processWebhookConfirmed($order_id);
+                $this->processWebhookConfirmed($order);
                 break;
             case Status::CANCELED_STATUS :
-                $this->processWebhookCanceled($order_id);
+                $this->processWebhookCanceled($order);
                 break;
             case Status::FAILED_STATUS :
-                $this->processWebhookFailed($order_id);
+                $this->processWebhookFailed($order);
                 break;
             default :
         }
 
     }
 
-    private function processWebhookConfirmed($order_id)
+    /**
+     * @param bool|WC_Order|WC_Order_Refund $order
+     */
+    private function processWebhookConfirmed($order)
     {
-        $order = wc_get_order($order_id);
+
         $order->payment_complete();
         wc_reduce_stock_levels($order->get_id());
     }
 
-    private function processWebhookProgress($order_id)
+    /**
+     * @param bool|WC_Order|WC_Order_Refund $order
+     */
+    private function processWebhookProgress($order)
     {
-        wc_get_order($order_id);
-
+        $order->set_status('pending');
     }
 
-    private function processWebhookCanceled($order_id)
+    /**
+     * @param bool|WC_Order|WC_Order_Refund $order
+     */
+    private function processWebhookCanceled($order)
     {
-        wc_get_order($order_id);
-
+        $order->set_status('cancelled');
     }
 
-    private function processWebhookFailed($order_id)
+    /**
+     * @param bool|WC_Order|WC_Order_Refund $order
+     */
+    private function processWebhookFailed($order)
     {
-        wc_get_order($order_id);
+        $order->set_status('failed');
     }
 
     protected function logEnkapPayment(int $orderId, string $merchantReferenceId, string $orderTransactionId)
@@ -298,7 +334,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
     {
         $icon_url = 'https://enkap.cm/';
         $icon_html = '';
-        $icon = WC_HTTPS::force_https_url(plugin_dir_url(__FILE__). '/assets/images/e-nkap.png');
+        $icon = WC_HTTPS::force_https_url(plugin_dir_url(__FILE__) . '/assets/images/e-nkap.png');
         $icon_html .= '<img src="' . esc_attr($icon) . '" alt="' . esc_attr__('E-nkap acceptance mark', Plugin::DOMAIN_TEXT) . '" />';
 
         $icon_html .= sprintf('<a href="%1$s" class="about_e_nkap" onclick="javascript:window.open(\'%1$s\',\'WIEnkap\',\'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=yes, resizable=yes, width=1060, height=700\'); return false;">' . esc_attr__('What is E-nkap?', Plugin::DOMAIN_TEXT) . '</a>', esc_url($icon_url));
