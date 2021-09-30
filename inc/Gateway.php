@@ -217,12 +217,14 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
     public function onReturn()
     {
 
+
         $merchantReferenceId = Helper::getOderMerchantIdFromUrl();
 
         $order_id = Plugin::getWcOrderIdByMerchantReferenceId($merchantReferenceId);
 
         if (empty($order_id)) {
-            Plugin::displayNotFoundPage();
+            #Plugin::displayNotFoundPage();
+            wp_redirect(get_permalink(wc_get_page_id('shop')));
             exit();
         }
         $status = filter_input(INPUT_GET, 'status');

@@ -7,6 +7,9 @@
 
 namespace Camoo\Enkap\WooCommerce;
 
+use Enkap\OAuth\Model\Status;
+use WP_REST_Server;
+
 defined('ABSPATH') || exit;
 if (!class_exists('\\Camoo\\Enkap\\WooCommerce\\Plugin')):
 
@@ -60,6 +63,7 @@ if (!class_exists('\\Camoo\\Enkap\\WooCommerce\\Plugin')):
                 return;
             }
             register_activation_hook($this->pluginPath, [InstallEnkap::class, 'install']);
+
             /*if (is_admin()) {
                 add_action('admin_menu', array($this, 'onAdminMenu'));
                 add_action('admin_init', array($this, 'dropdaySettingsInit'));
@@ -68,9 +72,15 @@ if (!class_exists('\\Camoo\\Enkap\\WooCommerce\\Plugin')):
             add_filter('woocommerce_payment_gateways', [$this, 'onAddGatewayClass']);
             add_filter('plugin_action_links_' . plugin_basename($this->pluginPath), [$this, 'onPluginActionLinks'], 1, 1);
             add_action('plugins_loaded', [$this, 'onInit']);
-            register_activation_hook($this->pluginPath, array($this, 'flush_rules'));
             add_action('wp_enqueue_scripts', [__CLASS__, 'enqueue_block_enkap_css_scripts']);
 
+            register_deactivation_hook($this->pluginPath, [$this, 'route_status_plugin_deactivate']);
+
+        }
+
+        public function route_status_plugin_deactivate()
+        {
+            flush_rewrite_rules();
         }
 
         public static function enqueue_block_enkap_css_scripts(): void
@@ -90,26 +100,8 @@ if (!class_exists('\\Camoo\\Enkap\\WooCommerce\\Plugin')):
         public function onInit()
         {
             $this->loadGatewayClass();
-            add_filter('init', [$this, 'rewrite_rules']);
             add_action('init', [__CLASS__, 'loadTextDomain']);
-        }
-
-        public function flush_rules()
-        {
-            $this->rewrite_rules();
-
-            flush_rewrite_rules();
-        }
-
-        public function rewrite_rules()
-        {
-            add_rewrite_rule('e-nkap/return/(.+?)/?$',
-                'index.php?wc-api=return_e_nkap&merchantReferenceId==$matches[1]', 'top');
-            add_rewrite_tag('%merchantReferenceId%', '([^&]+)');
-
-            add_rewrite_rule('e-nkap/notification/(.+?)/?$',
-                'index.php?wc-api=notification_e_nkap&merchantReferenceId==$matches[1]', 'top');
-            add_rewrite_tag('%merchantReferenceId%', '([^&]+)');
+            add_action('rest_api_init', [$this, 'notification_route']);
         }
 
         public function onPluginActionLinks($links)
@@ -132,7 +124,7 @@ if (!class_exists('\\Camoo\\Enkap\\WooCommerce\\Plugin')):
 
         public static function get_webhook_url($endpoint)
         {
-            return trailingslashit(get_home_url()) . 'e-nkap/' . $endpoint;
+            return trailingslashit(get_home_url()) . 'wc-e-nkap/' . $endpoint;
         }
 
         public static function getWcOrderIdByMerchantReferenceId($id_code)
@@ -179,6 +171,44 @@ if (!class_exists('\\Camoo\\Enkap\\WooCommerce\\Plugin')):
         {
             load_plugin_textdomain(self::DOMAIN_TEXT, false,
                 dirname(plugin_basename(__FILE__)) . '/languages');
+        }
+
+        public function return_route()
+        {
+            register_rest_route(
+                'wc-e-nkap/return',
+                '/(.*?)',
+                [
+                    'methods' => WP_REST_Server::READABLE,
+                    'callback' => [new WC_Enkap_Gateway(), 'onReturn'],
+                    'permission_callback' => '__return_true',
+                    'args' => [
+                        'status' => [
+                            'required' => true,
+                            'validate_callback' => function ($param) {
+                                return in_array($param, (new Status)->getAllowedStatus());
+                            }
+                        ],
+
+                    ],
+
+                ]
+            );
+            flush_rewrite_rules();
+        }
+
+        public function notification_route()
+        {
+            register_rest_route(
+                'wc-e-nkap/notification',
+                '/(.*?)',
+                [
+                    'methods' => WP_REST_Server::READABLE,
+                    'callback' => [new WC_Enkap_Gateway(), 'onNotification'],
+                    'permission_callback' => '__return_true',
+                ]
+            );
+            flush_rewrite_rules();
         }
     }
 
