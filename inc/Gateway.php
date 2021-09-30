@@ -51,66 +51,66 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
     {
         $this->form_fields = array(
             'enabled' => array(
-                'title' => __('Enable/Disable', 'wp_enkap'),
-                'label' => __('Enable E-nkap Payment', 'wp_enkap'),
+                'title' => __('Enable/Disable', Plugin::DOMAIN_TEXT),
+                'label' => __('Enable E-nkap Payment', Plugin::DOMAIN_TEXT),
                 'type' => 'checkbox',
                 'description' => '',
                 'default' => 'no'
             ),
             'title' => array(
-                'title' => 'Title',
+                'title' => __('Title', 'woocommerce'),
                 'type' => 'text',
-                'description' => __('This controls the title which the user sees during checkout.', 'wp_enkap'),
-                'default' => __('E-nkap Payment. Smobilpay for e-commerce', 'wp_enkap'),
+                'description' => __('This controls the title which the user sees during checkout.', 'woocommerce'),
+                'default' => __('E-nkap Payment. Smobilpay for e-commerce', Plugin::DOMAIN_TEXT),
                 'desc_tip' => true,
             ),
             'description' => array(
-                'title' => 'Description',
+                'title' => __('Description', 'woocommerce'),
                 'type' => 'textarea',
-                'description' => __('This controls the description which the user sees during checkout.', 'wp_enkap'),
-                'default' => __('Pay with your mobile phone via E-nkap payment gateway.', 'wp_enkap'),
+                'description' => __('This controls the description which the user sees during checkout.', 'woocommerce'),
+                'default' => __('Pay with your mobile phone via E-nkap payment gateway.', Plugin::DOMAIN_TEXT),
                 'desc_tip' => true,
             ),
             'instructions' => array(
                 'title' => __('Instructions', 'woocommerce'),
                 'type' => 'textarea',
                 'description' => __('Instructions that will be added to the thank you page.', 'woocommerce'),
-                'default' => __('Secured Payment with Enkap. Smobilpay for e-commerce', 'wp_enkap'),
+                'default' => __('Secured Payment with Enkap. Smobilpay for e-commerce', Plugin::DOMAIN_TEXT),
                 'desc_tip' => true,
             ),
             'testmode' => array(
-                'title' => 'Test mode',
-                'label' => 'Enable Test Mode',
+                'title' => __('Test mode', Plugin::DOMAIN_TEXT),
+                'label' => __('Enable Test Mode', Plugin::DOMAIN_TEXT),
                 'type' => 'checkbox',
-                'description' => __('Place the payment gateway in test mode using test API keys.', 'wp_enkap'),
+                'description' => __('Place the payment gateway in test mode using test API keys.', Plugin::DOMAIN_TEXT),
                 'default' => 'yes',
                 'desc_tip' => true,
             ),
             'enkap_currency' => [
-                'title' => __('Currency', 'wp_enkap'),
-                'label' => 'Enkap Currency',
+                'title' => __('Currency', 'woocommerce'),
+                'label' => __('E-nkap Currency', Plugin::DOMAIN_TEXT),
                 'type' => 'select',
-                'description' => __('Define the currency to place your payments', 'wp_enkap'),
+                'description' => __('Define the currency to place your payments', Plugin::DOMAIN_TEXT),
                 'default' => 'XAF',
-                'options' => ['XAF' => __('CFA-Franc BEAC', 'wp_enkap')],
+                'options' => ['XAF' => __('CFA-Franc BEAC', Plugin::DOMAIN_TEXT)],
                 'desc_tip' => true,
             ],
             'api_details' => [
                 'title' => __('API credentials', 'woocommerce'),
                 'type' => 'title',
-                'description' => sprintf(__('Enter your E-nkap API credentials to process Payments via E-nkap. Learn how to access your <a href="%s">E-nkap API Credentials</a>.', 'wp_enkap'), 'https://enkap.cm/faq/'),
+                'description' => sprintf(__('Enter your E-nkap API credentials to process Payments via E-nkap. Learn how to access your <a href="%s">E-nkap API Credentials</a>.', Plugin::DOMAIN_TEXT), 'https://enkap.cm/faq/'),
             ],
             'enkap_key' => [
-                'title' => __('Consumer Key', 'wp_enkap'),
+                'title' => __('Consumer Key', Plugin::DOMAIN_TEXT),
                 'type' => 'text',
-                'description' => __('Get your API Consumer Key from E-nkap.', 'wp_enkap'),
+                'description' => __('Get your API Consumer Key from E-nkap.', Plugin::DOMAIN_TEXT),
                 'default' => '',
                 'desc_tip' => true,
             ],
             'enkap_secret' => [
-                'title' => __('Consumer Secret', 'wp_enkap'),
+                'title' => __('Consumer Secret', Plugin::DOMAIN_TEXT),
                 'type' => 'password',
-                'description' => __('Get your API Consumer Secret from E-nkap.', 'wp_enkap'),
+                'description' => __('Get your API Consumer Secret from E-nkap.', Plugin::DOMAIN_TEXT),
                 'default' => '',
                 'desc_tip' => true,
             ],
@@ -133,7 +133,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
 
         $this->_key = $this->get_option('enkap_key');
         $this->_secret = $this->get_option('enkap_secret');
-        $setup = new CallbackUrlService($this->_key, $this->_secret);
+        $setup = new CallbackUrlService($this->_key, $this->_secret, [], $this->testmode);
         /** @var CallbackUrl $callBack */
         $callBack = $setup->loadModel(CallbackUrl::class);
         $callBack->return_url = Plugin::get_webhook_url('return');
@@ -145,7 +145,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
     {
         $wc_order = wc_get_order($order_id);
 
-        $orderService = new OrderService($this->_key, $this->_secret);
+        $orderService = new OrderService($this->_key, $this->_secret, [], $this->testmode);
 
         $order = $orderService->loadModel(Order::class);
 
@@ -157,8 +157,9 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
             'email' => $order_data['billing']['email'],
             'customerName' => $order_data['billing']['first_name'] . ' ' . $order_data['billing']['last_name'],
             'totalAmount' => (float)$order_data['total'],
-            'description' => 'Payment from ' . get_bloginfo('name'),
+            'description' => __('Payment from', Plugin::DOMAIN_TEXT) . ' ' . get_bloginfo('name'),
             'currency' => $this->get_option('enkap_currency'),
+            'langKey' => Plugin::getLanguageKey(),
             'items' => []
         ];
         foreach ($wc_order->get_items() as $item) {
@@ -176,7 +177,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
             $order->fromStringArray($dataData);
             $response = $orderService->place($order);
 
-            $wc_order->update_status('on-hold', __('Awaiting E-Nkap payment confirmation', $this->id));
+            $wc_order->update_status('on-hold', __('Awaiting E-Nkap payment confirmation', Plugin::DOMAIN_TEXT));
 
             // Empty cart
             WC()->cart->empty_cart();
@@ -298,9 +299,9 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
         $icon_url = 'https://enkap.cm/';
         $icon_html = '';
         $icon = WC_HTTPS::force_https_url(plugin_dir_url(__FILE__). '/assets/images/e-nkap.png');
-        $icon_html .= '<img src="' . esc_attr($icon) . '" alt="' . esc_attr__('E-nkap acceptance mark', 'woocommerce') . '" />';
+        $icon_html .= '<img src="' . esc_attr($icon) . '" alt="' . esc_attr__('E-nkap acceptance mark', Plugin::DOMAIN_TEXT) . '" />';
 
-        $icon_html .= sprintf('<a href="%1$s" class="about_e_nkap" onclick="javascript:window.open(\'%1$s\',\'WIEnkap\',\'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=yes, resizable=yes, width=1060, height=700\'); return false;">' . esc_attr__('What is E-nkap?', 'wp_enkap') . '</a>', esc_url($icon_url));
+        $icon_html .= sprintf('<a href="%1$s" class="about_e_nkap" onclick="javascript:window.open(\'%1$s\',\'WIEnkap\',\'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=yes, resizable=yes, width=1060, height=700\'); return false;">' . esc_attr__('What is E-nkap?', Plugin::DOMAIN_TEXT) . '</a>', esc_url($icon_url));
 
         return apply_filters('woocommerce_gateway_icon', $icon_html, $this->id);
     }

@@ -12,6 +12,7 @@ if (!class_exists('\\Camoo\\Enkap\\WooCommerce\\Plugin')):
 
     class Plugin
     {
+        public const DOMAIN_TEXT = 'wc-wp-enkap';
         protected $id;
         protected $mainMenuId;
         protected $adapterName;
@@ -42,7 +43,7 @@ if (!class_exists('\\Camoo\\Enkap\\WooCommerce\\Plugin')):
             );
 
             $this->mainMenuId = 'admin.php';
-            $this->title = sprintf(__('%s Payment Gateway', $this->id), 'E-nkap');
+            $this->title = __('E-nkap - Payment Gateway for WooCommerce', self::DOMAIN_TEXT);
         }
 
         private function test()
@@ -67,8 +68,9 @@ if (!class_exists('\\Camoo\\Enkap\\WooCommerce\\Plugin')):
             add_filter('woocommerce_payment_gateways', [$this, 'onAddGatewayClass']);
             add_filter('plugin_action_links_' . plugin_basename($this->pluginPath), [$this, 'onPluginActionLinks'], 1, 1);
             add_action('plugins_loaded', [$this, 'onInit']);
-            register_activation_hook( $this->pluginPath, array( $this, 'flush_rules' ) );
-            add_action('wp_enqueue_scripts', [ __CLASS__, 'enqueue_block_enkap_css_scripts' ]);
+            register_activation_hook($this->pluginPath, array($this, 'flush_rules'));
+            add_action('wp_enqueue_scripts', [__CLASS__, 'enqueue_block_enkap_css_scripts']);
+
         }
 
         public static function enqueue_block_enkap_css_scripts(): void
@@ -88,8 +90,10 @@ if (!class_exists('\\Camoo\\Enkap\\WooCommerce\\Plugin')):
         public function onInit()
         {
             $this->loadGatewayClass();
-            add_filter( 'init', array( $this, 'rewrite_rules' ) );
+            add_filter('init', [$this, 'rewrite_rules']);
+            add_action('init', [__CLASS__, 'loadTextDomain']);
         }
+
         public function flush_rules()
         {
             $this->rewrite_rules();
@@ -99,16 +103,20 @@ if (!class_exists('\\Camoo\\Enkap\\WooCommerce\\Plugin')):
 
         public function rewrite_rules()
         {
-            add_rewrite_rule( 'e-nkap/return/(.+?)/?$', 'index.php?wc-api=return_e_nkap&merchantReferenceId==$matches[1]', 'top');
-            add_rewrite_tag( '%merchantReferenceId%', '([^&]+)' );
+            add_rewrite_rule('e-nkap/return/(.+?)/?$',
+                'index.php?wc-api=return_e_nkap&merchantReferenceId==$matches[1]', 'top');
+            add_rewrite_tag('%merchantReferenceId%', '([^&]+)');
 
-            add_rewrite_rule( 'e-nkap/notification/(.+?)/?$', 'index.php?wc-api=notification_e_nkap&merchantReferenceId==$matches[1]', 'top');
-            add_rewrite_tag( '%merchantReferenceId%', '([^&]+)' );
+            add_rewrite_rule('e-nkap/notification/(.+?)/?$',
+                'index.php?wc-api=notification_e_nkap&merchantReferenceId==$matches[1]', 'top');
+            add_rewrite_tag('%merchantReferenceId%', '([^&]+)');
         }
 
         public function onPluginActionLinks($links)
         {
-            $link = sprintf('<a href="%s">%s</a>', admin_url('admin.php?page=wc-settings&tab=checkout&section=e_nkap'), __('Settings', $this->id));
+            $link = sprintf('<a href="%s">%s</a>',
+                admin_url('admin.php?page=wc-settings&tab=checkout&section=e_nkap'),
+                __('Settings', self::DOMAIN_TEXT));
             array_unshift($links, $link);
             return $links;
         }
@@ -124,7 +132,7 @@ if (!class_exists('\\Camoo\\Enkap\\WooCommerce\\Plugin')):
 
         public static function get_webhook_url($endpoint)
         {
-            return trailingslashit(get_home_url()). 'e-nkap/'.$endpoint;
+            return trailingslashit(get_home_url()) . 'e-nkap/' . $endpoint;
         }
 
         public static function getWcOrderIdByMerchantReferenceId($id_code)
@@ -151,6 +159,26 @@ if (!class_exists('\\Camoo\\Enkap\\WooCommerce\\Plugin')):
             $wp_query->set_404();
             status_header(404);
             get_template_part(404);
+        }
+
+        public static function getLanguageKey(): string
+        {
+            $local = get_locale();
+            if (empty($local)) {
+                return 'fr';
+            }
+
+            $localExploded = explode('_', $local);
+
+            $lang = $localExploded[0];
+
+            return in_array($lang, ['fr', 'en']) ? $lang : 'en';
+        }
+
+        public static function loadTextDomain(): void
+        {
+            load_plugin_textdomain(self::DOMAIN_TEXT, false,
+                dirname(plugin_basename(__FILE__)) . '/languages');
         }
     }
 

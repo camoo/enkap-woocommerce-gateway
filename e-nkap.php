@@ -12,7 +12,7 @@
  * Author URI: https://www.camoo.cm/
  * Developer: Camoo Sarl
  * Developer URI: http://www.camoo.cm/
- * Text Domain: wp_enkap
+ * Text Domain: wc-wp-enkap
  * Domain Path: /languages
  *
  * Copyright: © 2021 Camoo Sarl, CM.
@@ -30,11 +30,11 @@ require_once(__DIR__ . '/inc/Plugin.php');
     'WC_Enkap_Gateway',
     'Gateway',
     sprintf('%s<br/><a href="%s" target="_blank">%s</a><br/><a href="%s" target="_blank">%s</a>',
-        __('E-nkap payment gateway', 'wp_enkap'),
+        __('E-nkap payment gateway', Plugin::DOMAIN_TEXT),
         'https://enkap.cm/#comptenkap',
-        __('Do you have any questions or requests?', 'wp_enkap'),
+        __('Do you have any questions or requests?', Plugin::DOMAIN_TEXT),
         'https://github.com/camoo/enkap-oauth',
-        __('Do you like our plugin and can recommend to others?', 'wp_enkap')),
+        __('Do you like our plugin and can recommend to others.', Plugin::DOMAIN_TEXT)),
     '1.0.0'
 )
 )->register();
