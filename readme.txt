@@ -1,10 +1,14 @@
 === Enkap - Mobile Money Gateway for WooCommerce ===
 Contributors: camoo
-Tags: WooCommerce, Payment, Gateway,Payment Gateways, Shopping Cart, Extension, Invoice, Receipt
+Tags: WooCommerce, Mobile Money, Gateway,Payment Gateways, Shopping Cart, Extension, Invoice, Receipt
 Requires at least: 4.7
 Tested up to: 5.8.1
+Requires PHP: 7.3
+Stable tag: 1.0.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
+
+E-nkap is a simple and powerful Payment Gateway plugin for WooCommerce
 
 == Description ==
 **This is the Mobile Money payment gateway for WooCommerce.**
@@ -35,11 +39,11 @@ Yes! you can receive SmobilPay cash, if your buyer has an account with Smobilpay
 == Installation ==
 = Installation =
 1. In your WordPress Dashboard go to \"Plugins\" -> \"Add Plugin\".
-2. Search for \"Enkap Payment\".
+2. Search for \"E-nkap Payment\".
 3. Install the plugin by pressing the \"Install\" button.
 4. Activate the plugin by pressing the \"Activate\" button.
 5. Open the settings page for WooCommerce and click the \"Checkout\" tab.
-6. Click on the sub tab for \"Enkap Payment\".
+6. Click on the sub tab for \"E-nkap Payment\".
 7. Configure your Enkap Gateway settings.
 
 = Minimum Requirements =
