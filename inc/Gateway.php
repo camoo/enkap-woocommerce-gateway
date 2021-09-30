@@ -186,7 +186,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
             WC()->cart->empty_cart();
 
             $this->logEnkapPayment($order_id, $merchantReferenceId, $response->getOrderTransactionId());
-            $wc_order->add_order_note('Your order is under process! Thank you!', true);
+            $wc_order->add_order_note(__('Your order is under process! Thank you!', Plugin::DOMAIN_TEXT), true);
             return array(
                 'result' => 'success',
                 'redirect' => $response->getRedirectUrl()
@@ -297,7 +297,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
      */
     private function processWebhookProgress($order)
     {
-        $order->set_status('pending');
+        $order->update_status('pending');
     }
 
     /**
@@ -305,7 +305,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
      */
     private function processWebhookCanceled($order)
     {
-        $order->set_status('cancelled');
+        $order->update_status('cancelled');
     }
 
     /**
@@ -313,7 +313,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
      */
     private function processWebhookFailed($order)
     {
-        $order->set_status('failed');
+        $order->update_status('failed');
     }
 
     protected function logEnkapPayment(int $orderId, string $merchantReferenceId, string $orderTransactionId)
