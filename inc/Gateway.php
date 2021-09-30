@@ -228,9 +228,12 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
         $status = filter_input(INPUT_GET, 'status');
 
         if ($status && ($order = wc_get_order($order_id))) {
-            $this->processWebhook($order, sanitize_text_field($status));
+            $this->processWebhook($order, sanitize_text_field($status), $merchantReferenceId);
         }
-        $shop_page_url = get_permalink(wc_get_page_id('shop'));
+
+        $shop_page_url = isset($order) ? $order->get_checkout_order_received_url() :
+            get_permalink(wc_get_page_id('shop'));
+
         if (wp_redirect($shop_page_url)) {
             exit;
         }
@@ -258,26 +261,26 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
 
         $order = wc_get_order($orderId);
         if ($order) {
-            $this->processWebhook($order, sanitize_text_field($status));
+            $this->processWebhook($order, sanitize_text_field($status), $merchantReferenceId);
         }
         return "Status Updated To " . $order->get_status();
     }
 
-    public function processWebhook($order, $status)
+    public function processWebhook($order, $status, $merchantReferenceId)
     {
         switch ($status) {
             case Status::IN_PROGRESS_STATUS :
             case Status::CREATED_STATUS :
-                $this->processWebhookProgress($order);
+                $this->processWebhookProgress($order, $merchantReferenceId);
                 break;
             case Status::CONFIRMED_STATUS :
-                $this->processWebhookConfirmed($order);
+                $this->processWebhookConfirmed($order, $merchantReferenceId);
                 break;
             case Status::CANCELED_STATUS :
-                $this->processWebhookCanceled($order);
+                $this->processWebhookCanceled($order, $merchantReferenceId);
                 break;
             case Status::FAILED_STATUS :
-                $this->processWebhookFailed($order);
+                $this->processWebhookFailed($order, $merchantReferenceId);
                 break;
             default :
         }
@@ -287,35 +290,81 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
     /**
      * @param bool|WC_Order|WC_Order_Refund $order
      */
-    private function processWebhookConfirmed($order)
+    private function processWebhookConfirmed($order, string $merchantReferenceId)
     {
-
+        global $wpdb;
         $order->payment_complete();
         wc_reduce_stock_levels($order->get_id());
+        $wpdb->update(
+            $wpdb->prefix . "wc_enkap_payments",
+            [
+                'status_date' => current_time('mysql'),
+                'status' => Status::CONFIRMED_STATUS,
+            ],
+            [
+                'merchant_reference_id' => $merchantReferenceId
+            ]
+        );
+        $order->add_order_note( __('E-nkap payment completed', Plugin::DOMAIN_TEXT), true);
     }
 
     /**
      * @param bool|WC_Order|WC_Order_Refund $order
      */
-    private function processWebhookProgress($order)
+    private function processWebhookProgress($order, string $merchantReferenceId)
     {
+        global $wpdb;
         $order->update_status('pending');
+        $wpdb->update(
+            $wpdb->prefix . "wc_enkap_payments",
+            [
+                'status_date' => current_time('mysql'),
+                'status' => Status::IN_PROGRESS_STATUS,
+            ],
+            [
+                'merchant_reference_id' => $merchantReferenceId
+            ]
+        );
     }
 
     /**
      * @param bool|WC_Order|WC_Order_Refund $order
      */
-    private function processWebhookCanceled($order)
+    private function processWebhookCanceled($order, string $merchantReferenceId)
     {
+        global $wpdb;
         $order->update_status('cancelled');
+        $wpdb->update(
+            $wpdb->prefix . "wc_enkap_payments",
+            [
+                'status_date' => current_time('mysql'),
+                'status' => Status::CANCELED_STATUS,
+            ],
+            [
+                'merchant_reference_id' => $merchantReferenceId
+            ]
+        );
+        $order->add_order_note( __('E-nkap payment cancelled', Plugin::DOMAIN_TEXT), true);
     }
 
     /**
      * @param bool|WC_Order|WC_Order_Refund $order
      */
-    private function processWebhookFailed($order)
+    private function processWebhookFailed($order, string $merchantReferenceId)
     {
+        global $wpdb;
         $order->update_status('failed');
+        $wpdb->update(
+            $wpdb->prefix . "wc_enkap_payments",
+            [
+                'status_date' => current_time('mysql'),
+                'status' => Status::FAILED_STATUS,
+            ],
+            [
+                'merchant_reference_id' => $merchantReferenceId
+            ]
+        );
+        $order->add_order_note( __('E-nkap payment failed', Plugin::DOMAIN_TEXT), true);
     }
 
     protected function logEnkapPayment(int $orderId, string $merchantReferenceId, string $orderTransactionId)
