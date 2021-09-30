@@ -165,6 +165,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
             'langKey' => Plugin::getLanguageKey(),
             'items' => []
         ];
+
         foreach ($wc_order->get_items() as $item) {
             $product = $item->get_product();
 
@@ -172,6 +173,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
                 'itemId' => $item->get_id(),
                 'particulars' => $item->get_name(),
                 'unitCost' => (float)$product->get_price(),
+                'subTotal' => (float)$item->get_subtotal(),
                 'quantity' => $item->get_quantity()
             ];
         }
