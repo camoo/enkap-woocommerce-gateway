@@ -102,6 +102,7 @@ if (!class_exists('\\Camoo\\Enkap\\WooCommerce\\Plugin')):
             $this->loadGatewayClass();
             add_action('init', [__CLASS__, 'loadTextDomain']);
             add_action('rest_api_init', [$this, 'notification_route']);
+            add_action('rest_api_init', [$this, 'return_route']);
         }
 
         public function onPluginActionLinks($links)
