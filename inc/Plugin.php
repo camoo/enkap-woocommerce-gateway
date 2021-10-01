@@ -145,14 +145,6 @@ if (!class_exists('\\Camoo\\Enkap\\WooCommerce\\Plugin')):
             return (int)$payment->wc_order_id;
         }
 
-        public static function displayNotFoundPage()
-        {
-            global $wp_query;
-            $wp_query->set_404();
-            status_header(404);
-            get_template_part(404);
-        }
-
         public static function getLanguageKey(): string
         {
             $local = get_locale();
@@ -186,7 +178,7 @@ if (!class_exists('\\Camoo\\Enkap\\WooCommerce\\Plugin')):
                         'status' => [
                             'required' => true,
                             'validate_callback' => function ($param) {
-                                return in_array($param, (new Status)->getAllowedStatus());
+                                return in_array($param, Status::getAllowedStatus());
                             }
                         ],
 
