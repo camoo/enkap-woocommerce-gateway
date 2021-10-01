@@ -125,7 +125,7 @@ if (!class_exists('\\Camoo\\Enkap\\WooCommerce\\Plugin')):
 
         public static function get_webhook_url($endpoint)
         {
-            return trailingslashit(get_home_url()) . 'wc-e-nkap/' . $endpoint;
+            return trailingslashit(get_home_url()) . 'wp-json/wc-e-nkap/' . $endpoint;
         }
 
         public static function getWcOrderIdByMerchantReferenceId($id_code)
