@@ -22,7 +22,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
     private $_key;
     private $_secret;
     private $instructions;
-    private $testmode;
+    private $testMode;
 
     public function __construct()
     {
@@ -33,16 +33,16 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
         $this->init_form_fields();
         $this->init_settings();
 
-        $this->title = $this->get_option('title');
-        $this->method_title = $this->get_option('method_title');
-        $this->method_description = $this->get_option('description');
-        $this->enabled = $this->get_option('enabled');
-        $this->testmode = 'yes' === $this->get_option('testmode');
-        $this->description = $this->get_option('description');
-        $this->instructions = $this->get_option('instructions');
+        $this->title = esc_html($this->get_option('title'));
+        $this->method_title = esc_html($this->get_option('method_title'));
+        $this->method_description = esc_html($this->get_option('description'));
+        $this->enabled = sanitize_text_field($this->get_option('enabled'));
+        $this->testMode = 'yes' === sanitize_text_field($this->get_option('testmode'));
+        $this->description = esc_html($this->get_option('description'));
+        $this->instructions = esc_html($this->get_option('instructions'));
 
-        $this->_key = $this->get_option('enkap_key');
-        $this->_secret = $this->get_option('enkap_secret');
+        $this->_key = sanitize_text_field($this->get_option('enkap_key'));
+        $this->_secret = sanitize_text_field($this->get_option('enkap_secret'));
 
         add_action('woocommerce_update_options_payment_gateways_' . $this->id, array($this, 'process_admin_options'));
         add_action('woocommerce_api_return_' . $this->id, array($this, 'onReturn'));
@@ -132,9 +132,9 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
     {
         parent::process_admin_options();
 
-        $this->_key = $this->get_option('enkap_key');
-        $this->_secret = $this->get_option('enkap_secret');
-        $setup = new CallbackUrlService($this->_key, $this->_secret, [], $this->testmode);
+        $this->_key = sanitize_text_field($this->get_option('enkap_key'));
+        $this->_secret = sanitize_text_field($this->get_option('enkap_secret'));
+        $setup = new CallbackUrlService($this->_key, $this->_secret, [], $this->testMode);
         /** @var CallbackUrl $callBack */
         $callBack = $setup->loadModel(CallbackUrl::class);
         $callBack->return_url = Plugin::get_webhook_url('return');
@@ -144,9 +144,9 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
 
     public function process_payment($order_id)
     {
-        $wc_order = wc_get_order($order_id);
+        $wc_order = wc_get_order(absint(wp_unslash($order_id)));
 
-        $orderService = new OrderService($this->_key, $this->_secret, [], $this->testmode);
+        $orderService = new OrderService($this->_key, $this->_secret, [], $this->testMode);
 
         $order = $orderService->loadModel(Order::class);
 
@@ -159,7 +159,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
             'customerName' => $order_data['billing']['first_name'] . ' ' . $order_data['billing']['last_name'],
             'totalAmount' => (float)$order_data['total'],
             'description' => __('Payment from', Plugin::DOMAIN_TEXT) . ' ' . get_bloginfo('name'),
-            'currency' => $this->get_option('enkap_currency'),
+            'currency' => sanitize_text_field($this->get_option('enkap_currency')),
             'langKey' => Plugin::getLanguageKey(),
             'items' => []
         ];
@@ -185,8 +185,14 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
             // Empty cart
             WC()->cart->empty_cart();
 
-            $this->logEnkapPayment($order_id, $merchantReferenceId, $response->getOrderTransactionId());
-            $wc_order->add_order_note(__('Your order is under process! Thank you!', Plugin::DOMAIN_TEXT), true);
+            $this->logEnkapPayment(
+                $order_id,
+                $merchantReferenceId,
+                sanitize_text_field($response->getOrderTransactionId())
+            );
+            $wc_order->add_order_note(
+                __('Your order is under process! Thank you!', Plugin::DOMAIN_TEXT),
+                true);
             return array(
                 'result' => 'success',
                 'redirect' => $response->getRedirectUrl()
@@ -197,23 +203,9 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
         return null;
     }
 
-    public function thankyou_page()
-    {
-        if ($this->instructions) {
-            echo wpautop(wptexturize($this->instructions));
-        }
-    }
-
-    public function email_instructions($order, $sent_to_admin, $plain_text = false)
-    {
-        if ($this->instructions && !$sent_to_admin && 'offline' === $order->payment_method && $order->has_status('on-hold')) {
-            echo wpautop(wptexturize($this->instructions)) . PHP_EOL;
-        }
-    }
-
     public function onReturn()
     {
-        $merchantReferenceId = Helper::getOderMerchantIdFromUrl();
+        $merchantReferenceId = sanitize_text_field(Helper::getOderMerchantIdFromUrl());
 
         $order_id = Plugin::getWcOrderIdByMerchantReferenceId($merchantReferenceId);
 
@@ -237,7 +229,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
 
     public function onNotification()
     {
-        $merchantReferenceId = Helper::getOderMerchantIdFromUrl();
+        $merchantReferenceId = sanitize_text_field(Helper::getOderMerchantIdFromUrl());
 
         $orderId = Plugin::getWcOrderIdByMerchantReferenceId($merchantReferenceId);
 
@@ -255,10 +247,12 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
         }
 
         $order = wc_get_order($orderId);
+        $oldStatus = '';
         if ($order) {
+            $oldStatus = $order->get_status();
             Plugin::processWebhookStatus($order, sanitize_text_field($status), $merchantReferenceId);
         }
-        return "Status Updated To " . $order->get_status();
+        return sprintf('Status Updated From %s To %s', $oldStatus, $order->get_status());
     }
 
     protected function logEnkapPayment(int $orderId, string $merchantReferenceId, string $orderTransactionId)
@@ -268,22 +262,18 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
         $wpdb->insert(
             $wpdb->prefix . "wc_enkap_payments",
             [
-                'wc_order_id' => $orderId,
-                'order_transaction_id' => $orderTransactionId,
-                'merchant_reference_id' => $merchantReferenceId,
+                'wc_order_id' => absint(wp_unslash($orderId)),
+                'order_transaction_id' => sanitize_text_field($orderTransactionId),
+                'merchant_reference_id' => sanitize_text_field($merchantReferenceId),
             ]
         );
     }
 
     public function get_icon()
     {
-        //$icon_url = 'https://enkap.cm/';
         $icon_html = '';
         $icon = WC_HTTPS::force_https_url(plugin_dir_url(__FILE__) . 'assets/images/e-nkap.png');
         $icon_html .= '<img src="' . esc_attr($icon) . '" alt="' . esc_attr__('E-nkap acceptance mark', Plugin::DOMAIN_TEXT) . '" />';
-
-        //$icon_html .= sprintf('<a href="%1$s" class="about_e_nkap" onclick="javascript:window.open(\'%1$s\',\'WIEnkap\',\'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=yes, resizable=yes, width=1060, height=700\'); return false;">' . esc_attr__('What is E-nkap?', Plugin::DOMAIN_TEXT) . '</a>', esc_url($icon_url));
-
         return apply_filters('woocommerce_gateway_icon', $icon_html, $this->id);
     }
 }

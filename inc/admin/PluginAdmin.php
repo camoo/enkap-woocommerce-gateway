@@ -57,9 +57,9 @@ if (!class_exists(PluginAdmin::class)):
             add_action('admin_enqueue_scripts', [__CLASS__, 'enqueue_admin_enkap_css_scripts']);
         }
 
-        public static function enqueue_admin_enkap_css_scripts() : void
+        public static function enqueue_admin_enkap_css_scripts(): void
         {
-           wp_enqueue_style(
+            wp_enqueue_style(
                 'admin_enkap_style',
                 plugins_url('/inc/assets/css/admin-style.css', dirname(__DIR__))
             );
@@ -68,20 +68,19 @@ if (!class_exists(PluginAdmin::class)):
 
         public static function checkRemotePaymentStatus()
         {
+
             if (current_user_can('edit_shop_orders') &&
-                check_admin_referer('woocommerce-mark-order-status') &&
+                check_admin_referer('woocommerce_enkap_check_status') &&
                 isset($_GET['status'], $_GET['order_id'])) {
                 $status = sanitize_text_field(wp_unslash($_GET['status']));
                 /** @var bool|WC_Order|WC_Order_Refund $order */
                 $order = wc_get_order(absint(wp_unslash($_GET['order_id'])));
-
                 if ($status === 'check' && !empty($order) && $order->has_status(['pending', 'on-hold', 'processing'])) {
                     WC()->payment_gateways();
                     $settings = get_option('woocommerce_' . Plugin::WC_ENKAP_GATEWAY_ID . '_settings');
-                    $consumerKey = $settings['enkap_key'];
-                    $consumerSecret = $settings['enkap_secret'];
+                    $consumerKey = sanitize_text_field($settings['enkap_key']);
+                    $consumerSecret = sanitize_text_field($settings['enkap_secret']);
                     $statusService = new StatusService($consumerKey, $consumerSecret);
-
                     $paymentData = self::getPaymentByWcOrderId($order->get_id());
                     if ($paymentData) {
                         $status = $statusService->getByTransactionId($paymentData->order_transaction_id);
@@ -112,8 +111,9 @@ if (!class_exists(PluginAdmin::class)):
             $order_id = method_exists($order, 'get_id') ? $order->get_id() : $order->id;
             $actions['check'] = [
                 'url' => wp_nonce_url(
-                    admin_url('admin-ajax.php?action=e_nkap_mark_order_status&status=check&order_id=' . $order_id),
-                    'woocommerce-mark-order-status'),
+                    admin_url('admin-ajax.php?action=e_nkap_mark_order_status&status=check&order_id=' .
+                        absint(wp_unslash($order_id))),
+                    'woocommerce_enkap_check_status'),
                 'name' => __('Check status', Plugin::DOMAIN_TEXT),
                 'title' => __('Check remote order status', Plugin::DOMAIN_TEXT),
                 'action' => 'check',
@@ -182,7 +182,7 @@ if (!class_exists(PluginAdmin::class)):
 
             $db_prepare = $wpdb->prepare(
                 "SELECT * FROM `{$wpdb->prefix}wc_enkap_payments` WHERE `wc_order_id` = %s",
-                $wcOrderId);
+                absint(wp_unslash($wcOrderId)));
             $payment = $wpdb->get_row($db_prepare);
 
             if (!$payment) {

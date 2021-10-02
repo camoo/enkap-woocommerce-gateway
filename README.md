@@ -19,16 +19,16 @@ The usage of this plugin is completely free. You have to just have an Enkap acco
 # Installation
 We assume you already installed WooCommerce and configured it successfully
 
-1. Upload `e-nkap` to the `/wp-content/plugins/` directory
+1. Upload `e-nkap-woocommerce-gateway` to the `/wp-content/plugins/` directory
 
    Install Using GIT
 ```sh
 cd wp-content/plugins
 
-git clone https://github.com/camoo/enkap-woocommerce-gateway.git e-nkap
+git clone https://github.com/camoo/enkap-woocommerce-gateway.git e-nkap-woocommerce-gateway
 
 # install dependencies
-cd e-nkap
+cd e-nkap-woocommerce-gateway
 composer install
 ```
 

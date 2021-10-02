@@ -45,7 +45,9 @@ if (!class_exists(Logger::class)):
                 return;
             }
 
-            $this->logger->log($level, $this->getMessage($file, $line, $message), ['source' => $this->id]);
+            $this->logger->log($level,
+                $this->getMessage(sanitize_text_field($file), absint($line), sanitize_textarea_field($message)),
+                ['source' => $this->id]);
         }
 
         public function debug($file, $line, $message)

@@ -6,7 +6,7 @@ defined('ABSPATH') || exit;
 
 class InstallEnkap
 {
-    public const PLUGIN_MAIN_FILE = 'e-nkap/e-nkap.php';
+    public const PLUGIN_MAIN_FILE = 'e-nkap-woocommerce-gateway/e-nkap-woocommerce-gateway.php';
 
     public function __construct()
     {
@@ -38,7 +38,7 @@ class InstallEnkap
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
 
         $table_name = $wpdb->prefix . 'wc_enkap_payments';
-        if ($wpdb->get_var("show tables like '$table_name'") != $table_name) {
+        if ($wpdb->get_var("show tables like '$table_name'") !== $table_name) {
             $create_enkap_payments = ("CREATE TABLE IF NOT EXISTS $table_name(
             id int(10) NOT NULL auto_increment,
             wc_order_id bigint unsigned NOT NULL,

@@ -46,8 +46,8 @@ if (!class_exists(Plugin::class)):
                 'live' => '1',
                 'accountId' => '',
                 'apiKey' => '',
-                'notifyForStatus' => array(),
-                'completeOrderForStatuses' => array()
+                'notifyForStatus' => [],
+                'completeOrderForStatuses' => []
             );
 
             $this->mainMenuId = 'admin.php';
@@ -127,23 +127,24 @@ if (!class_exists(Plugin::class)):
             include_once(dirname(__DIR__) . '/vendor/autoload.php');
         }
 
-        public static function get_webhook_url($endpoint)
+        public static function get_webhook_url($endpoint): string
         {
             if (get_option('permalink_structure')) {
-                return trailingslashit(get_home_url()) . 'wp-json/wc-e-nkap/' . $endpoint;
+                return trailingslashit(get_home_url()) . 'wp-json/wc-e-nkap/' . sanitize_text_field($endpoint);
             }
 
-            return add_query_arg('rest_route', '/wc-e-nkap/' . $endpoint, trailingslashit(get_home_url()));
+            return add_query_arg('rest_route', '/wc-e-nkap/' . sanitize_text_field($endpoint),
+                trailingslashit(get_home_url()));
         }
 
-        public static function getWcOrderIdByMerchantReferenceId($id_code)
+        public static function getWcOrderIdByMerchantReferenceId(string $merchantReferenceId): ?int
         {
             global $wpdb;
-            if (!wp_is_uuid($id_code)) {
+            if (!wp_is_uuid(sanitize_text_field($merchantReferenceId))) {
                 return null;
             }
 
-            $db_prepare = $wpdb->prepare("SELECT * FROM `{$wpdb->prefix}wc_enkap_payments` WHERE `merchant_reference_id` = %s", $id_code);
+            $db_prepare = $wpdb->prepare("SELECT * FROM `{$wpdb->prefix}wc_enkap_payments` WHERE `merchant_reference_id` = %s", $merchantReferenceId);
             $payment = $wpdb->get_row($db_prepare);
 
             if (!$payment) {
@@ -155,7 +156,7 @@ if (!class_exists(Plugin::class)):
 
         public static function getLanguageKey(): string
         {
-            $local = get_locale();
+            $local = sanitize_text_field(get_locale());
             if (empty($local)) {
                 return 'fr';
             }
@@ -192,9 +193,7 @@ if (!class_exists(Plugin::class)):
                                 return in_array($param, Status::getAllowedStatus());
                             }
                         ],
-
                     ],
-
                 ]
             );
             flush_rewrite_rules();
@@ -214,12 +213,13 @@ if (!class_exists(Plugin::class)):
             flush_rewrite_rules();
         }
 
-        public static function processWebhookStatus($order, $status, $merchantReferenceId)
+        public static function processWebhookStatus($order, string $status, string $merchantReferenceId)
         {
-            switch ($status) {
+            switch (sanitize_text_field($status)) {
                 case Status::IN_PROGRESS_STATUS:
                 case Status::CREATED_STATUS:
-                    self::processWebhookProgress($order, $merchantReferenceId);
+                case Status::INITIALISED_STATUS:
+                    self::processWebhookProgress($order, $merchantReferenceId, $status);
                     break;
                 case Status::CONFIRMED_STATUS:
                     self::processWebhookConfirmed($order, $merchantReferenceId);
@@ -250,7 +250,7 @@ if (!class_exists(Plugin::class)):
                     'status' => Status::CONFIRMED_STATUS,
                 ],
                 [
-                    'merchant_reference_id' => $merchantReferenceId
+                    'merchant_reference_id' => sanitize_text_field($merchantReferenceId)
                 ]
             );
             $order->add_order_note(__('E-nkap payment completed', Plugin::DOMAIN_TEXT), true);
@@ -259,7 +259,7 @@ if (!class_exists(Plugin::class)):
         /**
          * @param bool|WC_Order|WC_Order_Refund $order
          */
-        private static function processWebhookProgress($order, string $merchantReferenceId)
+        private static function processWebhookProgress($order, string $merchantReferenceId, string $realStatus)
         {
             global $wpdb;
             $order->update_status('pending');
@@ -267,10 +267,10 @@ if (!class_exists(Plugin::class)):
                 $wpdb->prefix . "wc_enkap_payments",
                 [
                     'status_date' => current_time('mysql'),
-                    'status' => Status::IN_PROGRESS_STATUS,
+                    'status' => sanitize_title($realStatus),
                 ],
                 [
-                    'merchant_reference_id' => $merchantReferenceId
+                    'merchant_reference_id' => sanitize_text_field($merchantReferenceId)
                 ]
             );
             do_action('woocommerce_order_edit_status', $order->get_id(), 'pending');
@@ -290,7 +290,7 @@ if (!class_exists(Plugin::class)):
                     'status' => Status::CANCELED_STATUS,
                 ],
                 [
-                    'merchant_reference_id' => $merchantReferenceId
+                    'merchant_reference_id' => sanitize_text_field($merchantReferenceId)
                 ]
             );
             $order->add_order_note(__('E-nkap payment cancelled', Plugin::DOMAIN_TEXT), true);
@@ -311,7 +311,7 @@ if (!class_exists(Plugin::class)):
                     'status' => Status::FAILED_STATUS,
                 ],
                 [
-                    'merchant_reference_id' => $merchantReferenceId
+                    'merchant_reference_id' => sanitize_text_field($merchantReferenceId)
                 ]
             );
             $order->add_order_note(__('E-nkap payment failed', Plugin::DOMAIN_TEXT), true);
