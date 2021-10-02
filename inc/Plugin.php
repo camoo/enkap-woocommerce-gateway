@@ -7,7 +7,10 @@
 
 namespace Camoo\Enkap\WooCommerce;
 
+use Camoo\Enkap\WooCommerce\Admin\PluginAdmin;
 use Enkap\OAuth\Model\Status;
+use WC_Order;
+use WC_Order_Refund;
 use WP_REST_Server;
 
 defined('ABSPATH') || exit;
@@ -16,6 +19,7 @@ if (!class_exists('\\Camoo\\Enkap\\WooCommerce\\Plugin')):
     class Plugin
     {
         public const DOMAIN_TEXT = 'wc-wp-enkap';
+        public const WC_ENKAP_GATEWAY_ID = 'e_nkap';
         protected $id;
         protected $mainMenuId;
         protected $adapterName;
@@ -49,11 +53,6 @@ if (!class_exists('\\Camoo\\Enkap\\WooCommerce\\Plugin')):
             $this->title = __('E-nkap - Payment Gateway for WooCommerce', self::DOMAIN_TEXT);
         }
 
-        private function test()
-        {
-
-        }
-
         public function register()
         {
             require_once(ABSPATH . 'wp-admin/includes/plugin.php');
@@ -75,7 +74,9 @@ if (!class_exists('\\Camoo\\Enkap\\WooCommerce\\Plugin')):
             add_action('wp_enqueue_scripts', [__CLASS__, 'enqueue_block_enkap_css_scripts']);
 
             register_deactivation_hook($this->pluginPath, [$this, 'route_status_plugin_deactivate']);
-
+            if (is_admin()) {
+                PluginAdmin::instance()->register();
+            }
         }
 
         public function route_status_plugin_deactivate()
@@ -107,9 +108,11 @@ if (!class_exists('\\Camoo\\Enkap\\WooCommerce\\Plugin')):
 
         public function onPluginActionLinks($links)
         {
-            $link = sprintf('<a href="%s">%s</a>',
+            $link = sprintf(
+                '<a href="%s">%s</a>',
                 admin_url('admin.php?page=wc-settings&tab=checkout&section=e_nkap'),
-                __('Settings', self::DOMAIN_TEXT));
+                __('Settings', self::DOMAIN_TEXT)
+            );
             array_unshift($links, $link);
             return $links;
         }
@@ -134,7 +137,6 @@ if (!class_exists('\\Camoo\\Enkap\\WooCommerce\\Plugin')):
 
         public static function getWcOrderIdByMerchantReferenceId($id_code)
         {
-
             global $wpdb;
             if (!wp_is_uuid($id_code)) {
                 return null;
@@ -166,8 +168,11 @@ if (!class_exists('\\Camoo\\Enkap\\WooCommerce\\Plugin')):
 
         public static function loadTextDomain(): void
         {
-            load_plugin_textdomain(self::DOMAIN_TEXT, false,
-                dirname(plugin_basename(__FILE__)) . '/languages');
+            load_plugin_textdomain(
+                self::DOMAIN_TEXT,
+                false,
+                dirname(plugin_basename(__FILE__)) . '/languages'
+            );
         }
 
         public function return_route()
@@ -206,6 +211,110 @@ if (!class_exists('\\Camoo\\Enkap\\WooCommerce\\Plugin')):
                 ]
             );
             flush_rewrite_rules();
+        }
+
+        public static function processWebhookStatus($order, $status, $merchantReferenceId)
+        {
+            switch ($status) {
+                case Status::IN_PROGRESS_STATUS:
+                case Status::CREATED_STATUS:
+                    self::processWebhookProgress($order, $merchantReferenceId);
+                    break;
+                case Status::CONFIRMED_STATUS:
+                    self::processWebhookConfirmed($order, $merchantReferenceId);
+                    break;
+                case Status::CANCELED_STATUS:
+                    self::processWebhookCanceled($order, $merchantReferenceId);
+                    break;
+                case Status::FAILED_STATUS:
+                    self::processWebhookFailed($order, $merchantReferenceId);
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        /**
+         * @param bool|WC_Order|WC_Order_Refund $order
+         */
+        private static function processWebhookConfirmed($order, string $merchantReferenceId)
+        {
+            global $wpdb;
+            $order->payment_complete();
+            wc_reduce_stock_levels($order->get_id());
+            $wpdb->update(
+                $wpdb->prefix . "wc_enkap_payments",
+                [
+                    'status_date' => current_time('mysql'),
+                    'status' => Status::CONFIRMED_STATUS,
+                ],
+                [
+                    'merchant_reference_id' => $merchantReferenceId
+                ]
+            );
+            $order->add_order_note(__('E-nkap payment completed', Plugin::DOMAIN_TEXT), true);
+        }
+
+        /**
+         * @param bool|WC_Order|WC_Order_Refund $order
+         */
+        private static function processWebhookProgress($order, string $merchantReferenceId)
+        {
+            global $wpdb;
+            $order->update_status('pending');
+            $wpdb->update(
+                $wpdb->prefix . "wc_enkap_payments",
+                [
+                    'status_date' => current_time('mysql'),
+                    'status' => Status::IN_PROGRESS_STATUS,
+                ],
+                [
+                    'merchant_reference_id' => $merchantReferenceId
+                ]
+            );
+            do_action('woocommerce_order_edit_status', $order->get_id(), 'pending');
+        }
+
+        /**
+         * @param bool|WC_Order|WC_Order_Refund $order
+         */
+        private static function processWebhookCanceled($order, string $merchantReferenceId)
+        {
+            global $wpdb;
+            $order->update_status('cancelled');
+            $wpdb->update(
+                $wpdb->prefix . "wc_enkap_payments",
+                [
+                    'status_date' => current_time('mysql'),
+                    'status' => Status::CANCELED_STATUS,
+                ],
+                [
+                    'merchant_reference_id' => $merchantReferenceId
+                ]
+            );
+            $order->add_order_note(__('E-nkap payment cancelled', Plugin::DOMAIN_TEXT), true);
+            do_action('woocommerce_order_edit_status', $order->get_id(), 'cancelled');
+        }
+
+        /**
+         * @param bool|WC_Order|WC_Order_Refund $order
+         */
+        private static function processWebhookFailed($order, string $merchantReferenceId)
+        {
+            global $wpdb;
+            $order->update_status('failed');
+            $wpdb->update(
+                $wpdb->prefix . "wc_enkap_payments",
+                [
+                    'status_date' => current_time('mysql'),
+                    'status' => Status::FAILED_STATUS,
+                ],
+                [
+                    'merchant_reference_id' => $merchantReferenceId
+                ]
+            );
+            $order->add_order_note(__('E-nkap payment failed', Plugin::DOMAIN_TEXT), true);
+            do_action('woocommerce_order_edit_status', $order->get_id(), 'failed');
         }
     }
 

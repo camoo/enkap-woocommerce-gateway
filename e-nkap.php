@@ -27,6 +27,7 @@ namespace Camoo\Enkap\WooCommerce;
 
 defined('ABSPATH') || exit;
 require_once(__DIR__ . '/inc/Plugin.php');
+require_once(__DIR__ . '/inc/admin/PluginAdmin.php');
 
 (new Plugin(
     __FILE__,

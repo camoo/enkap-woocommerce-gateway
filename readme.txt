@@ -1,5 +1,5 @@
 === Enkap - Mobile Money Gateway for WooCommerce ===
-Contributors: camoo
+Contributors: camoo, maviance
 Tags: WooCommerce, Mobile Money, Gateway,Payment Gateways, Shopping Cart, Extension, Invoice, Receipt
 Requires at least: 4.7
 Tested up to: 5.8.1

@@ -1,2 +1,3 @@
 vendor
 .DS
+.php_cs.cache
