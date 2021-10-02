@@ -18,6 +18,7 @@ if (!class_exists('\\Camoo\\Enkap\\WooCommerce\\Plugin')):
 
     class Plugin
     {
+        public const WP_WC_ENKAP_DB_VERSION = '1.0.0';
         public const DOMAIN_TEXT = 'wc-wp-enkap';
         public const WC_ENKAP_GATEWAY_ID = 'e_nkap';
         protected $id;

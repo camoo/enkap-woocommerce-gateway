@@ -7,6 +7,7 @@ class InstallEnkap
 {
 
     public const PLUGIN_MAIN_FILE = 'e-nkap/e-nkap.php';
+
     public function __construct()
     {
         add_action('wpmu_new_blog', array($this, 'add_table_on_create_blog'), 10, 1);
@@ -48,7 +49,7 @@ class InstallEnkap
             created_at            timestamp     NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at            timestamp     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY(ID)) CHARSET=utf8");
-
+            add_option('wp_wc_enkap_db_version', Plugin::WP_WC_ENKAP_DB_VERSION);
             dbDelta($create_enkap_payments);
         }
 
@@ -62,6 +63,10 @@ class InstallEnkap
     public static function install($network_wide)
     {
         self::create_table($network_wide);
+
+        if (is_admin()) {
+            self::upgrade();
+        }
     }
 
     /**
@@ -75,7 +80,6 @@ class InstallEnkap
             switch_to_blog($blog_id);
 
             self::table_sql();
-
             restore_current_blog();
         }
     }
@@ -93,8 +97,20 @@ class InstallEnkap
         foreach (['wc_enkap_payments'] as $tbl) {
             $tables[] = $wpdb->tb_prefix . $tbl;
         }
-
+        delete_option('wp_wc_enkap_db_version');
         return $tables;
+    }
+
+    /**
+     * Upgrade plugin requirements if needed
+     */
+    public static function upgrade(): void
+    {
+        $installedVersion = get_option(Plugin::WP_WC_ENKAP_DB_VERSION);
+
+        if ($installedVersion !== Plugin::WP_WC_ENKAP_DB_VERSION) {
+            update_option('wp_wc_enkap_db_version', Plugin::WP_WC_ENKAP_DB_VERSION);
+        }
     }
 }
 
