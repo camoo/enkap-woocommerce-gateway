@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Description of PluginAdmin
+ * PluginAdmin
  *
  * @author Camoo
  */
@@ -24,7 +24,6 @@ if (!class_exists('Camoo\Enkap\WooCommerce\Admin\PluginAdmin')):
         protected $author;
         protected $isRegistered;
 
-
         public static function instance()
         {
             if (!isset(self::$instance)) {
@@ -37,7 +36,6 @@ if (!class_exists('Camoo\Enkap\WooCommerce\Admin\PluginAdmin')):
         {
             $this->mainMenuId = 'wc-e-nkap';
             $this->author = 'wordpress@camoo.sarl';
-
             $this->isRegistered = false;
         }
 
@@ -56,6 +54,16 @@ if (!class_exists('Camoo\Enkap\WooCommerce\Admin\PluginAdmin')):
             add_action('manage_shop_order_posts_custom_column', [__CLASS__, 'get_extended_order_value'], 2);
             add_filter('woocommerce_admin_order_actions', [__CLASS__, 'add_custom_order_status_actions_button'], 100, 2);
             add_action('wp_ajax_e_nkap_mark_order_status', [__CLASS__, 'checkRemotePaymentStatus']);
+            add_action('admin_enqueue_scripts', [__CLASS__, 'enqueue_admin_enkap_css_scripts']);
+        }
+
+        public static function enqueue_admin_enkap_css_scripts() : void
+        {
+           wp_enqueue_style(
+                'admin_enkap_style',
+                plugins_url('/inc/assets/css/admin-style.css', dirname(__DIR__))
+            );
+
         }
 
         public static function checkRemotePaymentStatus()
@@ -87,21 +95,31 @@ if (!class_exists('Camoo\Enkap\WooCommerce\Admin\PluginAdmin')):
             exit();
         }
 
-        public static function add_custom_order_status_actions_button($actions, $order)
+        /**
+         * @param array $actions
+         * @param $order
+         * @return array
+         */
+        public static function add_custom_order_status_actions_button(array $actions, $order): array
         {
-            // Display the button for all orders that have a 'processing' status
-            if ($order->has_status(['pending', 'on-hold', 'processing'])) {
-
-                // Get Order ID (compatibility all WC versions)
-                $order_id = method_exists($order, 'get_id') ? $order->get_id() : $order->id;
-                // Set the action button
-                $actions['check'] = array(
-                    'url' => wp_nonce_url(admin_url('admin-ajax.php?action=e_nkap_mark_order_status&status=check&order_id=' . $order_id), 'woocommerce-mark-order-status'),
-                    'name' => __('Check Status', Plugin::DOMAIN_TEXT),
-                    'title' => __('Check remote order status', Plugin::DOMAIN_TEXT),
-                    'action' => 'processing',
-                );
+            if ($order->get_payment_method() !== Plugin::WC_ENKAP_GATEWAY_ID) {
+                return $actions;
             }
+            // Display the button for all orders that have a 'processing' status
+            if (!$order->has_status(['pending', 'on-hold', 'processing'])) {
+                return $actions;
+            }
+
+            $order_id = method_exists($order, 'get_id') ? $order->get_id() : $order->id;
+            $actions['check'] = [
+                'url' => wp_nonce_url(
+                    admin_url('admin-ajax.php?action=e_nkap_mark_order_status&status=check&order_id=' . $order_id),
+                    'woocommerce-mark-order-status'),
+                'name' => __('Check status', Plugin::DOMAIN_TEXT),
+                'title' => __('Check remote order status', Plugin::DOMAIN_TEXT),
+                'action' => 'check',
+            ];
+
             return $actions;
         }
 
@@ -118,7 +136,11 @@ if (!class_exists('Camoo\Enkap\WooCommerce\Admin\PluginAdmin')):
                 26
             );
 
-            add_submenu_page($this->mainMenuId, 'About', 'About', 'manage_options', $this->mainMenuId);
+            add_submenu_page($this->mainMenuId,
+                'About',
+                'About',
+                'manage_options',
+                $this->mainMenuId);
         }
 
         public function display()
@@ -128,7 +150,7 @@ if (!class_exists('Camoo\Enkap\WooCommerce\Admin\PluginAdmin')):
 
         public static function extend_order_view($columns): array
         {
-            $new_columns = (is_array($columns)) ? $columns : array();
+            $new_columns = (is_array($columns)) ? $columns : [];
             unset($new_columns['wc_actions']);
 
             $new_columns['merchant_reference_id'] = __('E-nkap-Reference-ID', Plugin::DOMAIN_TEXT);
@@ -143,12 +165,12 @@ if (!class_exists('Camoo\Enkap\WooCommerce\Admin\PluginAdmin')):
             global $post;
             $orderId = $post->ID;
 
-            if ($column == 'merchant_reference_id') {
+            if ($column === 'merchant_reference_id') {
                 $paymentData = self::getPaymentByWcOrderId($orderId);
                 echo esc_html($paymentData->merchant_reference_id ?? '');
             }
 
-            if ($column == 'order_transaction_id') {
+            if ($column === 'order_transaction_id') {
                 $paymentData = self::getPaymentByWcOrderId($orderId);
 
                 echo esc_html($paymentData->order_transaction_id ?? '');
@@ -159,7 +181,9 @@ if (!class_exists('Camoo\Enkap\WooCommerce\Admin\PluginAdmin')):
         {
             global $wpdb;
 
-            $db_prepare = $wpdb->prepare("SELECT * FROM `{$wpdb->prefix}wc_enkap_payments` WHERE `wc_order_id` = %s", $wcOrderId);
+            $db_prepare = $wpdb->prepare(
+                "SELECT * FROM `{$wpdb->prefix}wc_enkap_payments` WHERE `wc_order_id` = %s",
+                $wcOrderId);
             $payment = $wpdb->get_row($db_prepare);
 
             if (!$payment) {
