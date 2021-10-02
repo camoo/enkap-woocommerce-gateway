@@ -1,11 +1,11 @@
 <?php
 
 namespace Camoo\Enkap\WooCommerce;
+
 defined('ABSPATH') || exit;
 
 class InstallEnkap
 {
-
     public const PLUGIN_MAIN_FILE = 'e-nkap/e-nkap.php';
 
     public function __construct()
@@ -52,7 +52,6 @@ class InstallEnkap
             add_option('wp_wc_enkap_db_version', Plugin::WP_WC_ENKAP_DB_VERSION);
             dbDelta($create_enkap_payments);
         }
-
     }
 
     /**
@@ -115,4 +114,3 @@ class InstallEnkap
 }
 
 new InstallEnkap();
-

@@ -15,7 +15,7 @@ use WC_Order_Refund;
 
 defined('ABSPATH') || exit;
 
-if (!class_exists('Camoo\Enkap\WooCommerce\Admin\PluginAdmin')):
+if (!class_exists(PluginAdmin::class)):
 
     class PluginAdmin
     {

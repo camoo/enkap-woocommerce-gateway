@@ -14,7 +14,7 @@ use WC_Order_Refund;
 use WP_REST_Server;
 
 defined('ABSPATH') || exit;
-if (!class_exists('\\Camoo\\Enkap\\WooCommerce\\Plugin')):
+if (!class_exists(Plugin::class)):
 
     class Plugin
     {
@@ -95,7 +95,7 @@ if (!class_exists('\\Camoo\\Enkap\\WooCommerce\\Plugin')):
 
         public function onAddGatewayClass($gateways)
         {
-            $gateways[] = '\\Camoo\\Enkap\\WooCommerce\\WC_Enkap_Gateway';
+            $gateways[] = WC_Enkap_Gateway::class;
             return $gateways;
         }
 
