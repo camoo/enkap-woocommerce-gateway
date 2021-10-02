@@ -85,7 +85,6 @@ if (!class_exists('Camoo\Enkap\WooCommerce\Admin\PluginAdmin')):
                     $paymentData = self::getPaymentByWcOrderId($order->get_id());
                     if ($paymentData) {
                         $status = $statusService->getByTransactionId($paymentData->order_transaction_id);
-
                         Plugin::processWebhookStatus($order, $status->getCurrent(), $paymentData->merchant_reference_id);
                     }
                 }

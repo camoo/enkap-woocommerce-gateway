@@ -240,7 +240,7 @@ if (!class_exists('\\Camoo\\Enkap\\WooCommerce\\Plugin')):
         private static function processWebhookConfirmed($order, string $merchantReferenceId)
         {
             global $wpdb;
-            $order->payment_complete();
+            $order->update_status('completed');
             wc_reduce_stock_levels($order->get_id());
             $wpdb->update(
                 $wpdb->prefix . "wc_enkap_payments",
