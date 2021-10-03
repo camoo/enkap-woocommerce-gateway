@@ -10,6 +10,7 @@
     "homepage": "https://camoo.cm",
     "license": "GPL-2.0-or-later",
     "prefer-stable" : true,
+    "version": "1.0.0",
     "authors": [
         {
             "name": "CAMOO SARL",
@@ -24,7 +25,8 @@
         "ORANGE Cameroon Mobile Money",
         "Express Union Cameroon Mobile Money",
         "Smobil Cash pay",
-        "enkap"
+        "enkap",
+        "smobilpay for e-commerce"
     ],
     "support": {
         "issues": "https://github.com/camoo/enkap-woocommerce-gateway/issues",
