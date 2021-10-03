@@ -11,7 +11,7 @@ use Enkap\OAuth\Model\CallbackUrl;
 use Throwable;
 use WC_HTTPS;
 use WC_Payment_Gateway;
-use WP_Error;
+use WP_REST_Response;
 use WP_REST_Server;
 
 defined('ABSPATH') || exit;
@@ -227,14 +227,17 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
         }
     }
 
-    public function onNotification()
+    public function onNotification(): WP_REST_Response
     {
         $merchantReferenceId = sanitize_text_field(Helper::getOderMerchantIdFromUrl());
 
         $orderId = Plugin::getWcOrderIdByMerchantReferenceId($merchantReferenceId);
 
         if (empty($orderId)) {
-            return new WP_error('invalid_request_id', 'Bad Request', ['status' => 400]);
+            return new WP_REST_Response([
+                'status' => 'KO',
+                'message' => 'Bad Request'
+            ], 400);
         }
 
         $requestBody = WP_REST_Server::get_raw_data();
@@ -243,7 +246,10 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
         $status = $bodyData['status'];
 
         if (empty($status) || !in_array(sanitize_text_field($status), Status::getAllowedStatus())) {
-            return new WP_error('invalid_request_status', 'Bad Request', ['status' => 400]);
+            return new WP_REST_Response([
+                'status' => 'KO',
+                'message' => 'Bad Request'
+            ], 400);
         }
 
         $order = wc_get_order($orderId);
@@ -252,7 +258,10 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
             $oldStatus = $order->get_status();
             Plugin::processWebhookStatus($order, sanitize_text_field($status), $merchantReferenceId);
         }
-        return sprintf('Status Updated From %s To %s', $oldStatus, $order->get_status());
+        return new WP_REST_Response([
+            'status' => 'OK',
+            'message' => sprintf('Status Updated From %s To %s', $oldStatus, $order->get_status())
+        ], 200);
     }
 
     protected function logEnkapPayment(int $orderId, string $merchantReferenceId, string $orderTransactionId)
@@ -273,7 +282,8 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
     {
         $icon_html = '';
         $icon = WC_HTTPS::force_https_url(plugin_dir_url(__FILE__) . 'assets/images/e-nkap.png');
-        $icon_html .= '<img src="' . esc_attr($icon) . '" alt="' . esc_attr__('E-nkap acceptance mark', Plugin::DOMAIN_TEXT) . '" />';
+        $icon_html .= '<img src="' . esc_attr($icon) . '" alt="' .
+            esc_attr__('E-nkap acceptance mark', Plugin::DOMAIN_TEXT) . '" />';
         return apply_filters('woocommerce_gateway_icon', $icon_html, $this->id);
     }
 }
