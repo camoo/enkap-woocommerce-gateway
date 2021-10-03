@@ -97,6 +97,8 @@ class InstallEnkap
             $tables[] = $wpdb->tb_prefix . $tbl;
         }
         delete_option('wp_wc_enkap_db_version');
+        delete_option('woocommerce_' . Plugin::WC_ENKAP_GATEWAY_ID . '_settings');
+
         return $tables;
     }
 
@@ -113,4 +115,4 @@ class InstallEnkap
     }
 }
 
-new InstallEnkap();
+(new InstallEnkap());

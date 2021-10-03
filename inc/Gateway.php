@@ -37,7 +37,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
         $this->method_title = esc_html($this->get_option('method_title'));
         $this->method_description = esc_html($this->get_option('description'));
         $this->enabled = sanitize_text_field($this->get_option('enabled'));
-        $this->testMode = 'yes' === sanitize_text_field($this->get_option('testmode'));
+        $this->testMode = 'yes' === sanitize_text_field($this->get_option('test_mode'));
         $this->description = esc_html($this->get_option('description'));
         $this->instructions = esc_html($this->get_option('instructions'));
 
@@ -80,7 +80,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
                 'default' => __('Secured Payment with Enkap. Smobilpay for e-commerce', Plugin::DOMAIN_TEXT),
                 'desc_tip' => true,
             ),
-            'testmode' => array(
+            'test_mode' => array(
                 'title' => __('Test mode', Plugin::DOMAIN_TEXT),
                 'label' => __('Enable Test Mode', Plugin::DOMAIN_TEXT),
                 'type' => 'checkbox',

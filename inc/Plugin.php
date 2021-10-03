@@ -64,11 +64,6 @@ if (!class_exists(Plugin::class)):
             }
             register_activation_hook($this->pluginPath, [InstallEnkap::class, 'install']);
 
-            /*if (is_admin()) {
-                add_action('admin_menu', array($this, 'onAdminMenu'));
-                add_action('admin_init', array($this, 'dropdaySettingsInit'));
-            }*/
-
             add_filter('woocommerce_payment_gateways', [$this, 'onAddGatewayClass']);
             add_filter('plugin_action_links_' . plugin_basename($this->pluginPath), [$this, 'onPluginActionLinks'], 1, 1);
             add_action('plugins_loaded', [$this, 'onInit']);

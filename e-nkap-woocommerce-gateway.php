@@ -7,7 +7,7 @@
  * Version: 1.0.0
  * Tested up to: 5.8.1
  * WC requires at least: 3.2
- * WC tested up to: 4.8
+ * WC tested up to: 5.7.1
  * Author: Camoo Sarl
  * Author URI: https://www.camoo.cm/
  * Developer: Camoo Sarl
@@ -37,7 +37,7 @@ require_once(__DIR__ . '/inc/admin/PluginAdmin.php');
         __('E-nkap payment gateway', Plugin::DOMAIN_TEXT),
         'https://enkap.cm/#comptenkap',
         __('Do you have any questions or requests?', Plugin::DOMAIN_TEXT),
-        'https://github.com/camoo/enkap-oauth',
+        'https://github.com/camoo/enkap-woocommerce-gateway',
         __('Do you like our plugin and can recommend to others.', Plugin::DOMAIN_TEXT)),
     '1.0.0'
 )

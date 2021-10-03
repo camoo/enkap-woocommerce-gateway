@@ -24,7 +24,7 @@ if (!class_exists(PluginAdmin::class)):
         protected $author;
         protected $isRegistered;
 
-        public static function instance()
+        public static function instance() :?self
         {
             if (!isset(self::$instance)) {
                 self::$instance = new self();
@@ -80,7 +80,8 @@ if (!class_exists(PluginAdmin::class)):
                     $settings = get_option('woocommerce_' . Plugin::WC_ENKAP_GATEWAY_ID . '_settings');
                     $consumerKey = sanitize_text_field($settings['enkap_key']);
                     $consumerSecret = sanitize_text_field($settings['enkap_secret']);
-                    $statusService = new StatusService($consumerKey, $consumerSecret);
+                    $testMode = sanitize_text_field($settings['test_mode']) === 'yes';
+                    $statusService = new StatusService($consumerKey, $consumerSecret, [], $testMode);
                     $paymentData = self::getPaymentByWcOrderId($order->get_id());
                     if ($paymentData) {
                         $status = $statusService->getByTransactionId($paymentData->order_transaction_id);
@@ -103,7 +104,7 @@ if (!class_exists(PluginAdmin::class)):
             if ($order->get_payment_method() !== Plugin::WC_ENKAP_GATEWAY_ID) {
                 return $actions;
             }
-            // Display the button for all orders that have a 'processing' status
+
             if (!$order->has_status(['pending', 'on-hold', 'processing'])) {
                 return $actions;
             }
