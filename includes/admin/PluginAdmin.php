@@ -61,7 +61,7 @@ if (!class_exists(PluginAdmin::class)):
         {
             wp_enqueue_style(
                 'admin_enkap_style',
-                plugins_url('/inc/assets/css/admin-style.css', dirname(__DIR__))
+                plugins_url('/includes/assets/css/admin-style.css', dirname(__DIR__))
             );
 
         }
@@ -132,7 +132,7 @@ if (!class_exists(PluginAdmin::class)):
                 $this->mainMenuId,
                 array(&$this, 'display'),
                 '',
-                #plugins_url('inc/assets/images/multi-shipping.png', dirname(__FILE__, 2)),
+                #plugins_url('includes/assets/images/multi-shipping.png', dirname(__FILE__, 2)),
                 26
             );
 

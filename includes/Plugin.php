@@ -119,7 +119,7 @@ if (!class_exists(Plugin::class)):
             if (class_exists('\\Camoo\\Enkap\\WooCommerce\\' . $this->adapterName)) {
                 return;
             }
-            include_once(dirname(__DIR__) . '/inc/Gateway.php');
+            include_once(dirname(__DIR__) . '/includes/Gateway.php');
             include_once(dirname(__DIR__) . '/vendor/autoload.php');
             require_once __DIR__ . '/Logger/Logger.php';
         }
