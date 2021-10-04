@@ -65,7 +65,8 @@ if (!class_exists(Plugin::class)):
             register_activation_hook($this->pluginPath, [InstallEnkap::class, 'install']);
 
             add_filter('woocommerce_payment_gateways', [$this, 'onAddGatewayClass']);
-            add_filter('plugin_action_links_' . plugin_basename($this->pluginPath), [$this, 'onPluginActionLinks'], 1, 1);
+            add_filter('plugin_action_links_' . plugin_basename($this->pluginPath),
+                [$this, 'onPluginActionLinks'], 1, 1);
             add_action('plugins_loaded', [$this, 'onInit']);
             add_action('wp_enqueue_scripts', [__CLASS__, 'enqueue_block_enkap_css_scripts']);
 
@@ -120,6 +121,7 @@ if (!class_exists(Plugin::class)):
             }
             include_once(dirname(__DIR__) . '/inc/Gateway.php');
             include_once(dirname(__DIR__) . '/vendor/autoload.php');
+            require_once __DIR__ . '/Logger/Logger.php';
         }
 
         public static function get_webhook_url($endpoint): string

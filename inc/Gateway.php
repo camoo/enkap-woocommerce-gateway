@@ -23,6 +23,8 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
     private $_secret;
     private $instructions;
     private $testMode;
+    /** @var Logger\Logger $logger */
+    private $logger;
 
     public function __construct()
     {
@@ -47,6 +49,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
         add_action('woocommerce_update_options_payment_gateways_' . $this->id, array($this, 'process_admin_options'));
         add_action('woocommerce_api_return_' . $this->id, array($this, 'onReturn'));
         add_action('woocommerce_api_notification_' . $this->id, array($this, 'onNotification'));
+        $this->logger = new Logger\Logger($this->id, WP_DEBUG || $this->testMode);
     }
 
     public function init_form_fields()
@@ -139,7 +142,17 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
         $callBack = $setup->loadModel(CallbackUrl::class);
         $callBack->return_url = Plugin::get_webhook_url('return');
         $callBack->notification_url = Plugin::get_webhook_url('notification');
-        $setup->set($callBack);
+        if ($setup->set($callBack)) {
+            $this->logger->info(
+                __FILE__,
+                __LINE__,
+                __('Return and Notification Urls setup successfully', Plugin::DOMAIN_TEXT));
+        }else{
+            $this->logger->error(
+                __FILE__,
+                __LINE__,
+                __('Return and Notification Urls could not be setup', Plugin::DOMAIN_TEXT));
+        }
     }
 
     public function process_payment($order_id)
@@ -197,8 +210,9 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
                 'result' => 'success',
                 'redirect' => $response->getRedirectUrl()
             );
-        } catch (Throwable $e) {
-            wc_add_notice($e->getMessage(), 'error');
+        } catch (Throwable $exception) {
+            $this->logger->error(__FILE__, __LINE__, $exception->getMessage());
+            wc_add_notice($exception->getMessage(), 'error');
         }
         return null;
     }
@@ -210,6 +224,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
         $order_id = Plugin::getWcOrderIdByMerchantReferenceId($merchantReferenceId);
 
         if (empty($order_id)) {
+            $this->logger->error(__FILE__, __LINE__, 'OnReturn:: Order Id not found');
             wp_redirect(get_permalink(wc_get_page_id('shop')));
             exit();
         }
@@ -234,6 +249,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
         $orderId = Plugin::getWcOrderIdByMerchantReferenceId($merchantReferenceId);
 
         if (empty($orderId)) {
+            $this->logger->error(__FILE__, __LINE__, 'onNotification:: Order Id not found');
             return new WP_REST_Response([
                 'status' => 'KO',
                 'message' => 'Bad Request'
@@ -246,6 +262,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
         $status = $bodyData['status'];
 
         if (empty($status) || !in_array(sanitize_text_field($status), Status::getAllowedStatus())) {
+            $this->logger->error(__FILE__, __LINE__, 'onNotification:: Invalide status ' . $status);
             return new WP_REST_Response([
                 'status' => 'KO',
                 'message' => 'Bad Request'
@@ -258,6 +275,8 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
             $oldStatus = $order->get_status();
             Plugin::processWebhookStatus($order, sanitize_text_field($status), $merchantReferenceId);
         }
+
+        $this->logger->info(__FILE__, __LINE__, 'onNotification:: status '.$status.' updates successfully');
         return new WP_REST_Response([
             'status' => 'OK',
             'message' => sprintf('Status Updated From %s To %s', $oldStatus, $order->get_status())
