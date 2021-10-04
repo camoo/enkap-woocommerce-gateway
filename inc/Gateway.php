@@ -166,7 +166,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
         $order_data = $wc_order->get_data();
 
         $merchantReferenceId = wp_generate_uuid4();
-        $dataData = [
+        $orderData = [
             'merchantReference' => $merchantReferenceId,
             'email' => $order_data['billing']['email'],
             'customerName' => $order_data['billing']['first_name'] . ' ' . $order_data['billing']['last_name'],
@@ -180,7 +180,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
         foreach ($wc_order->get_items() as $item) {
             $product = $item->get_product();
 
-            $dataData['items'][] = [
+            $orderData['items'][] = [
                 'itemId' => $item->get_id(),
                 'particulars' => $item->get_name(),
                 'unitCost' => (float)$product->get_price(),
@@ -190,7 +190,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
         }
 
         try {
-            $order->fromStringArray($dataData);
+            $order->fromStringArray($orderData);
             $response = $orderService->place($order);
 
             $wc_order->update_status('on-hold', __('Awaiting E-nkap payment confirmation', Plugin::DOMAIN_TEXT));
