@@ -14,7 +14,7 @@
  * Developer URI: http://www.camoo.cm/
  * Text Domain: wc-wp-enkap
  * Domain Path: /languages
- * Requires at least: 4.7
+ * Requires at least: 4.8
  * Requires PHP: 7.3
  * License: GPLv2 or later
  * License URI: http://www.gnu.org/licenses/gpl-2.0.html

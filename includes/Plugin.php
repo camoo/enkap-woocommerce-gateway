@@ -11,6 +11,7 @@ use Camoo\Enkap\WooCommerce\Admin\PluginAdmin;
 use Enkap\OAuth\Model\Status;
 use WC_Order;
 use WC_Order_Refund;
+use WP_Community_Events;
 use WP_REST_Server;
 
 defined('ABSPATH') || exit;
@@ -237,19 +238,9 @@ if (!class_exists(Plugin::class)):
          */
         private static function processWebhookConfirmed($order, string $merchantReferenceId)
         {
-            global $wpdb;
             $order->update_status('completed');
             wc_reduce_stock_levels($order->get_id());
-            $wpdb->update(
-                $wpdb->prefix . "wc_enkap_payments",
-                [
-                    'status_date' => current_time('mysql'),
-                    'status' => Status::CONFIRMED_STATUS,
-                ],
-                [
-                    'merchant_reference_id' => sanitize_text_field($merchantReferenceId)
-                ]
-            );
+            self::applyStatusChange(Status::CONFIRMED_STATUS, $merchantReferenceId);
             $order->add_order_note(__('E-nkap payment completed', Plugin::DOMAIN_TEXT), true);
         }
 
@@ -258,18 +249,8 @@ if (!class_exists(Plugin::class)):
          */
         private static function processWebhookProgress($order, string $merchantReferenceId, string $realStatus)
         {
-            global $wpdb;
             $order->update_status('pending');
-            $wpdb->update(
-                $wpdb->prefix . "wc_enkap_payments",
-                [
-                    'status_date' => current_time('mysql'),
-                    'status' => sanitize_title($realStatus),
-                ],
-                [
-                    'merchant_reference_id' => sanitize_text_field($merchantReferenceId)
-                ]
-            );
+            self::applyStatusChange($realStatus, $merchantReferenceId);
             do_action('woocommerce_order_edit_status', $order->get_id(), 'pending');
         }
 
@@ -278,18 +259,8 @@ if (!class_exists(Plugin::class)):
          */
         private static function processWebhookCanceled($order, string $merchantReferenceId)
         {
-            global $wpdb;
             $order->update_status('cancelled');
-            $wpdb->update(
-                $wpdb->prefix . "wc_enkap_payments",
-                [
-                    'status_date' => current_time('mysql'),
-                    'status' => Status::CANCELED_STATUS,
-                ],
-                [
-                    'merchant_reference_id' => sanitize_text_field($merchantReferenceId)
-                ]
-            );
+            self::applyStatusChange(Status::CANCELED_STATUS, $merchantReferenceId);
             $order->add_order_note(__('E-nkap payment cancelled', Plugin::DOMAIN_TEXT), true);
             do_action('woocommerce_order_edit_status', $order->get_id(), 'cancelled');
         }
@@ -299,20 +270,31 @@ if (!class_exists(Plugin::class)):
          */
         private static function processWebhookFailed($order, string $merchantReferenceId)
         {
-            global $wpdb;
             $order->update_status('failed');
+            self::applyStatusChange(Status::FAILED_STATUS, $merchantReferenceId);
+            $order->add_order_note(__('E-nkap payment failed', Plugin::DOMAIN_TEXT), true);
+            do_action('woocommerce_order_edit_status', $order->get_id(), 'failed');
+        }
+
+        private static function applyStatusChange(string $status, string $merchantReferenceId)
+        {
+            global $wpdb;
+            $remoteIp = WP_Community_Events::get_unsafe_client_ip();
+            $setData = [
+                'status_date' => current_time('mysql'),
+                'status' => sanitize_title($status)
+            ];
+            if ($remoteIp) {
+                $setData['remote_ip'] = sanitize_text_field($remoteIp);
+            }
             $wpdb->update(
                 $wpdb->prefix . "wc_enkap_payments",
-                [
-                    'status_date' => current_time('mysql'),
-                    'status' => Status::FAILED_STATUS,
-                ],
+                $setData,
                 [
                     'merchant_reference_id' => sanitize_text_field($merchantReferenceId)
                 ]
             );
-            $order->add_order_note(__('E-nkap payment failed', Plugin::DOMAIN_TEXT), true);
-            do_action('woocommerce_order_edit_status', $order->get_id(), 'failed');
+
         }
     }
 

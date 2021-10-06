@@ -48,6 +48,7 @@ class InstallEnkap
             status_date           datetime      NOT NULL DEFAULT '2021-05-20 00:00:00',
             created_at            timestamp     NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at            timestamp     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            remote_ip             varbinary(64) NOT NULL DEFAULT '0.0.0.0',
             PRIMARY KEY(ID)) CHARSET=utf8");
             add_option('wp_wc_enkap_db_version', Plugin::WP_WC_ENKAP_DB_VERSION);
             dbDelta($create_enkap_payments);
