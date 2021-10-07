@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace Camoo\Enkap\WooCommerce;
 
@@ -72,16 +73,19 @@ class InstallEnkap
     /**
      * Creating Table for New Blog in WordPress
      *
-     * @param $blog_id
+     * @param $blogId
      */
-    public function add_table_on_create_blog($blog_id)
+    public function add_table_on_create_blog($blogId)
     {
-        if (is_plugin_active_for_network(self::PLUGIN_MAIN_FILE)) {
-            switch_to_blog($blog_id);
-
-            self::table_sql();
-            restore_current_blog();
+        if (!is_plugin_active_for_network(self::PLUGIN_MAIN_FILE)) {
+            return;
         }
+
+        switch_to_blog($blogId);
+
+        self::table_sql();
+        restore_current_blog();
+
     }
 
     /**

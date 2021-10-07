@@ -142,7 +142,9 @@ if (!class_exists(Plugin::class)):
                 return null;
             }
 
-            $db_prepare = $wpdb->prepare("SELECT * FROM `{$wpdb->prefix}wc_enkap_payments` WHERE `merchant_reference_id` = %s", $merchantReferenceId);
+            $db_prepare = $wpdb->prepare(
+                "SELECT * FROM `{$wpdb->prefix}wc_enkap_payments` WHERE `merchant_reference_id` = %s",
+                $merchantReferenceId);
             $payment = $wpdb->get_row($db_prepare);
 
             if (!$payment) {
