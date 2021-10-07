@@ -55,42 +55,42 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
     public function init_form_fields()
     {
         $this->form_fields = array(
-            'enabled' => array(
+            'enabled' => [
                 'title' => __('Enable/Disable', Plugin::DOMAIN_TEXT),
                 'label' => __('Enable E-nkap Payment', Plugin::DOMAIN_TEXT),
                 'type' => 'checkbox',
                 'description' => '',
                 'default' => 'no'
-            ),
-            'title' => array(
+            ],
+            'title' => [
                 'title' => __('Title', 'woocommerce'),
                 'type' => 'text',
                 'description' => __('This controls the title which the user sees during checkout.', 'woocommerce'),
                 'default' => __('E-nkap Payment. Smobilpay for e-commerce', Plugin::DOMAIN_TEXT),
                 'desc_tip' => true,
-            ),
-            'description' => array(
+            ],
+            'description' => [
                 'title' => __('Description', 'woocommerce'),
                 'type' => 'textarea',
                 'description' => __('This controls the description which the user sees during checkout.', 'woocommerce'),
                 'default' => __('Pay with your mobile phone via E-nkap payment gateway.', Plugin::DOMAIN_TEXT),
                 'desc_tip' => true,
-            ),
-            'instructions' => array(
+            ],
+            'instructions' => [
                 'title' => __('Instructions', 'woocommerce'),
                 'type' => 'textarea',
                 'description' => __('Instructions that will be added to the thank you page.', 'woocommerce'),
                 'default' => __('Secured Payment with Enkap. Smobilpay for e-commerce', Plugin::DOMAIN_TEXT),
                 'desc_tip' => true,
-            ),
-            'test_mode' => array(
+            ],
+            'test_mode' => [
                 'title' => __('Test mode', Plugin::DOMAIN_TEXT),
                 'label' => __('Enable Test Mode', Plugin::DOMAIN_TEXT),
                 'type' => 'checkbox',
                 'description' => __('Place the payment gateway in test mode using test API keys.', Plugin::DOMAIN_TEXT),
-                'default' => 'yes',
+                'default' => 'no',
                 'desc_tip' => true,
-            ),
+            ],
             'enkap_currency' => [
                 'title' => __('Currency', 'woocommerce'),
                 'label' => __('E-nkap Currency', Plugin::DOMAIN_TEXT),
@@ -147,7 +147,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
                 __FILE__,
                 __LINE__,
                 __('Return and Notification Urls setup successfully', Plugin::DOMAIN_TEXT));
-        }else{
+        } else {
             $this->logger->error(
                 __FILE__,
                 __LINE__,
@@ -193,7 +193,8 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
             $order->fromStringArray($orderData);
             $response = $orderService->place($order);
 
-            $wc_order->update_status('on-hold', __('Awaiting E-nkap payment confirmation', Plugin::DOMAIN_TEXT));
+            $wc_order->update_status('on-hold',
+                __('Awaiting E-nkap payment confirmation', Plugin::DOMAIN_TEXT));
 
             // Empty cart
             WC()->cart->empty_cart();
@@ -204,7 +205,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
                 sanitize_text_field($response->getOrderTransactionId())
             );
             $wc_order->add_order_note(
-                __('Your order is under process! Thank you!', Plugin::DOMAIN_TEXT),
+                __('Your order is under process. Thank you!', Plugin::DOMAIN_TEXT),
                 true);
             return array(
                 'result' => 'success',
@@ -276,7 +277,8 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
             Plugin::processWebhookStatus($order, sanitize_text_field($status), $merchantReferenceId);
         }
 
-        $this->logger->info(__FILE__, __LINE__, 'onNotification:: status '.$status.' updates successfully');
+        $this->logger->info(__FILE__, __LINE__,
+            'onNotification:: status ' . $status . ' updates successfully');
         return new WP_REST_Response([
             'status' => 'OK',
             'message' => sprintf('Status Updated From %s To %s', $oldStatus, $order->get_status())

@@ -9,9 +9,9 @@ namespace Camoo\Enkap\WooCommerce;
 
 use Camoo\Enkap\WooCommerce\Admin\PluginAdmin;
 use Enkap\OAuth\Model\Status;
+use WC_Geolocation;
 use WC_Order;
 use WC_Order_Refund;
-use WP_Community_Events;
 use WP_REST_Server;
 
 defined('ABSPATH') || exit;
@@ -279,7 +279,7 @@ if (!class_exists(Plugin::class)):
         private static function applyStatusChange(string $status, string $merchantReferenceId)
         {
             global $wpdb;
-            $remoteIp = WP_Community_Events::get_unsafe_client_ip();
+            $remoteIp = WC_Geolocation::get_ip_address();
             $setData = [
                 'status_date' => current_time('mysql'),
                 'status' => sanitize_title($status)
