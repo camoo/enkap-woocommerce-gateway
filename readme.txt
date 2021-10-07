@@ -29,6 +29,7 @@ Customers are more likely to finalize a purchase on a site that has their prefer
 * Pay with SmobilPay Cash
 
 == Frequently Asked Questions ==
+
 = PHP 8 Support? =
 Yes! enkap-woocommerce-gateway is compatible with PHP version 8.0. We strongly recommend at least the use of PHP 7.3 to enjoy all the features offered
 
@@ -38,16 +39,20 @@ All you need is just to [create an account](https://enkap.cm/) and then ask our 
 = Can I receive cash payment ? =
 Yes! you can receive SmobilPay cash, if your buyer has an account with Smobilpay.
 
+= What is the cost for the gateway plugin? =
+This plugin is a FREE download.
 
 == Installation ==
 = Installation =
-1. In your WordPress Dashboard go to \"Plugins\" -> \"Add Plugin\".
-2. Search for \"E-nkap Payment\".
-3. Install the plugin by pressing the \"Install\" button.
-4. Activate the plugin by pressing the \"Activate\" button.
-5. Open the settings page for WooCommerce and click the \"Checkout\" tab.
-6. Click on the sub tab for \"E-nkap Payment\".
+1. In your WordPress Dashboard go to "Plugins" -> "Add Plugin".
+2. Search for "E-nkap Payment".
+3. Install the plugin by pressing the "Install" button.
+4. Activate the plugin by pressing the "Activate" button.
+5. Open the settings page for WooCommerce and click the "Payments" tab.
+6. Click on the line for "E-nkap Payment. Smobilpay for e-commerce".
 7. Configure your Enkap Gateway settings.
+
+More details can be found on the documentation website https://support.enkap.cm
 
 = Minimum Requirements =
 * WordPress version 4.7 or greater.
@@ -62,10 +67,6 @@ Yes! you can receive SmobilPay cash, if your buyer has an account with Smobilpay
 == Upgrade Notice ==
 
 == Changelog ==
-
-== Frequently Asked Questions ==
-= What is the cost for the gateway plugin? =
-This plugin is a FREE download.
 
 == Donations ==
 

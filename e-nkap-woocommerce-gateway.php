@@ -2,7 +2,7 @@
 
 /**
  * Plugin Name: E-nkap - Mobile Money Gateway for WooCommerce
- * Plugin URI: https://github.com/camoo/enkap-woocommerce-gateway
+ * Plugin URI: https://enkap.cm/
  * Description: Receive Mobile Money payments on your store using E-nkap.
  * Version: 1.0.0
  * Tested up to: 5.8.1
