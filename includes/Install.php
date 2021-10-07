@@ -5,7 +5,7 @@ namespace Camoo\Enkap\WooCommerce;
 
 defined('ABSPATH') || exit;
 
-class InstallEnkap
+class Install
 {
     public const PLUGIN_MAIN_FILE = 'e-nkap-woocommerce-gateway/e-nkap-woocommerce-gateway.php';
 
@@ -120,4 +120,4 @@ class InstallEnkap
     }
 }
 
-(new InstallEnkap());
+(new Install());

@@ -58,12 +58,12 @@ if (!class_exists(Plugin::class)):
         public function register()
         {
             require_once(ABSPATH . 'wp-admin/includes/plugin.php');
-            require_once __DIR__ . '/InstallEnkap.php';
+            require_once __DIR__ . '/Install.php';
             // do not register when WooCommerce is not enabled
             if (!is_plugin_active('woocommerce/woocommerce.php')) {
                 return;
             }
-            register_activation_hook($this->pluginPath, [InstallEnkap::class, 'install']);
+            register_activation_hook($this->pluginPath, [Install::class, 'install']);
 
             add_filter('woocommerce_payment_gateways', [$this, 'onAddGatewayClass']);
             add_filter('plugin_action_links_' . plugin_basename($this->pluginPath),

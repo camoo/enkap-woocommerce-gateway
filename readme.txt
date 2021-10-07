@@ -14,10 +14,13 @@ E-nkap is a simple and powerful Payment Gateway plugin for WooCommerce
 **This is the Mobile Money payment gateway for WooCommerce.**
 
 = About Enkap =
-Enkap is a payment method for digital goods and services online using the Mobile Money billing service.
+E-nkap is an online payment service aggregator that allows web users and e-Commerce companies to buy and sell on the Internet using all existing local and international payment methods.
+We enable digital organisations to accept cash payments, Mobile Money, or payments by cards.
+Offering a simple unique API to enable local businesses to go participate in the huge digital economy by transforming their service offerings into the world of e-commerce sites. Meet your customers where they spend more and more time – online!
 
 = About the plugin =
-The plugin allows you to use Enkap payment gateway with the WooCommerce plugin. The plugin uses an iframe-based form.
+Cameroonians avoid online buying because it lacks local payments known to consumers.
+Customers are more likely to finalize a purchase on a site that has their preferred payment options. This E-nkap plugin permits you to use all Mobile money payment gateways available in Cameroon with the WooCommerce plugin. This integration uses a single API. The user experience for the end-user be it tech-savvy or not, is hassle-free.
 
 = Features =
 * Pay with Cameroon MTN Mobile Money
