@@ -4,7 +4,7 @@ Tags: WooCommerce, Mobile Money, Gateway,Payment Gateways, Shopping Cart, Extens
 Requires at least: 4.8
 Tested up to: 5.8.1
 Requires PHP: 7.3
-Stable tag: 1.0.0
+Stable tag: 1.0.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -52,7 +52,7 @@ This plugin is a FREE download.
 6. Click on the line for "E-nkap Payment. Smobilpay for e-commerce".
 7. Configure your Enkap Gateway settings.
 
-More details can be found on the documentation website https://support.enkap.cm
+More details can be found on the [https://support.enkap.cm](documentation website)
 
 = Minimum Requirements =
 * WordPress version 4.7 or greater.
@@ -78,7 +78,10 @@ More details can be found on the documentation website https://support.enkap.cm
 N/A
 
 == Changelog ==
-N/A
+= 1.0.1: October 10, 2021 =
+* Fix: AccessToken in cache for production and develop
+* Tweak: Unneeded redirection hooks removed
+* Tweak: readme file improved
 
-= 1.0.0 =
+= 1.0.0: October 07, 2021 =
 * Start plugin
