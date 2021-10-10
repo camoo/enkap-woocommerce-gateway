@@ -112,7 +112,7 @@ class Install
      */
     public static function upgrade(): void
     {
-        $installedVersion = get_option(Plugin::WP_WC_ENKAP_DB_VERSION);
+        $installedVersion = get_option('wp_wc_enkap_db_version');
 
         if ($installedVersion !== Plugin::WP_WC_ENKAP_DB_VERSION) {
             update_option('wp_wc_enkap_db_version', Plugin::WP_WC_ENKAP_DB_VERSION);

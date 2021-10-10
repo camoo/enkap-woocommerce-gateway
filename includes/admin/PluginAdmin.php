@@ -9,6 +9,7 @@
 namespace Camoo\Enkap\WooCommerce\Admin;
 
 use Camoo\Enkap\WooCommerce\Plugin;
+use Enkap\OAuth\Lib\Helper;
 use Enkap\OAuth\Services\StatusService;
 use WC_Order;
 use WC_Order_Refund;
@@ -91,7 +92,7 @@ if (!class_exists(PluginAdmin::class)):
             }
 
             wp_safe_redirect(wp_get_referer() ? wp_get_referer() : admin_url('edit.php?post_type=shop_order'));
-            exit();
+            Helper::exitOrDie();
         }
 
         /**

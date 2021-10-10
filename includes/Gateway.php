@@ -47,8 +47,6 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
         $this->_secret = sanitize_text_field($this->get_option('enkap_secret'));
 
         add_action('woocommerce_update_options_payment_gateways_' . $this->id, array($this, 'process_admin_options'));
-        add_action('woocommerce_api_return_' . $this->id, array($this, 'onReturn'));
-        add_action('woocommerce_api_notification_' . $this->id, array($this, 'onNotification'));
         $this->logger = new Logger\Logger($this->id, WP_DEBUG || $this->testMode);
     }
 
@@ -227,7 +225,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
         if (empty($order_id)) {
             $this->logger->error(__FILE__, __LINE__, 'OnReturn:: Order Id not found');
             wp_redirect(get_permalink(wc_get_page_id('shop')));
-            exit();
+            Helper::exitOrDie();
         }
         $status = filter_input(INPUT_GET, 'status');
 
@@ -239,7 +237,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
             get_permalink(wc_get_page_id('shop'));
 
         if (wp_redirect($shop_page_url)) {
-            exit;
+            Helper::exitOrDie();
         }
     }
 
