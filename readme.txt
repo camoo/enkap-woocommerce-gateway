@@ -1,6 +1,6 @@
 === Enkap - Mobile Money Gateway for WooCommerce ===
 Contributors: camoo, maviance
-Tags: WooCommerce, Mobile Money, Gateway,Payment Gateways, Shopping Cart, Extension, Invoice, Receipt
+Tags: WooCommerce, Mobile Money, Gateway,Payment Gateways, Shopping Cart, Extension, Invoice, Receipt, Mobile Money, coupons
 Requires at least: 4.8
 Tested up to: 5.8.1
 Requires PHP: 7.3
@@ -8,7 +8,7 @@ Stable tag: 1.0.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
-E-nkap is a simple and powerful Payment Gateway plugin for WooCommerce
+E-nkap for WooCommerce is a simple and powerful Mobile Money Payment Gateway plugin
 
 == Description ==
 **This is the Mobile Money payment gateway for WooCommerce.**
