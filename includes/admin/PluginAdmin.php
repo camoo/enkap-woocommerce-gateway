@@ -50,7 +50,6 @@ if (!class_exists(PluginAdmin::class)):
 
             $this->isRegistered = true;
 
-            //add_action('admin_menu', array($this, 'onAdminMenu'), 1);
             add_filter('manage_edit-shop_order_columns', [__CLASS__, 'extend_order_view'], 10);
             add_action('manage_shop_order_posts_custom_column', [__CLASS__, 'get_extended_order_value'], 2);
             add_filter('woocommerce_admin_order_actions', [__CLASS__, 'add_custom_order_status_actions_button'], 100, 2);

@@ -46,7 +46,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
         $this->_key = sanitize_text_field($this->get_option('enkap_key'));
         $this->_secret = sanitize_text_field($this->get_option('enkap_secret'));
 
-        add_action('woocommerce_update_options_payment_gateways_' . $this->id, array($this, 'process_admin_options'));
+        add_action('woocommerce_update_options_payment_gateways_' . $this->id, [$this, 'process_admin_options']);
         $this->logger = new Logger\Logger($this->id, WP_DEBUG || $this->testMode);
     }
 
