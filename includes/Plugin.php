@@ -19,7 +19,7 @@ if (!class_exists(Plugin::class)):
 
     class Plugin
     {
-        public const WP_WC_ENKAP_DB_VERSION = '1.0.1';
+        public const WP_WC_ENKAP_DB_VERSION = '1.0.2';
         public const DOMAIN_TEXT = 'wc-wp-enkap';
         public const WC_ENKAP_GATEWAY_ID = 'e_nkap';
         protected $id;

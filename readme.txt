@@ -50,9 +50,9 @@ This plugin is a FREE download.
 4. Activate the plugin by pressing the "Activate" button.
 5. Open the settings page for WooCommerce and click the "Payments" tab.
 6. Click on the line for "E-nkap Payment. Smobilpay for e-commerce".
-7. Configure your Enkap Gateway settings.
+7. Configure your E-nkap Gateway settings.
 
-More details can be found on the [https://support.enkap.cm](documentation website)
+More details can be found on the [documentation website](https://support.enkap.cm)
 
 = Minimum Requirements =
 * WordPress version 4.7 or greater.
