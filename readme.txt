@@ -78,7 +78,7 @@ More details can be found on the [https://support.enkap.cm](documentation websit
 N/A
 
 == Changelog ==
-= 1.0.1: October 10, 2021 =
+= 1.0.1: October 12, 2021 =
 * Fix: AccessToken in cache for production and develop
 * Tweak: Unneeded redirection hooks removed
 * Tweak: readme file improved
