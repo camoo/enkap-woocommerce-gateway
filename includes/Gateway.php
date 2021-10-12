@@ -52,7 +52,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
 
     public function init_form_fields()
     {
-        $this->form_fields = array(
+        $wc_enkap_settings = [
             'enabled' => [
                 'title' => __('Enable/Disable', Plugin::DOMAIN_TEXT),
                 'label' => __('Enable E-nkap Payment', Plugin::DOMAIN_TEXT),
@@ -101,7 +101,19 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
             'api_details' => [
                 'title' => __('API credentials', 'woocommerce'),
                 'type' => 'title',
-                'description' => sprintf(__('Enter your E-nkap API credentials to process Payments via E-nkap. Learn how to access your <a href="%s">E-nkap API Credentials</a>.', Plugin::DOMAIN_TEXT), 'https://enkap.cm/faq/'),
+                'description' => wp_kses(
+                    sprintf(
+                        __('Enter your E-nkap API credentials to process Payments via E-nkap. Learn how to access your <a href="%s" target="_blank" rel="noopener noreferrer">E-nkap API Credentials</a>.',
+                            Plugin::DOMAIN_TEXT)
+                        , 'https://enkap.cm/faq/'),
+                    [
+                        'a' => [
+                            'href' => true,
+                            'target' => true,
+                            'rel' => true,
+                        ],
+                    ]
+                ),
             ],
             'enkap_key' => [
                 'title' => __('Consumer Key', Plugin::DOMAIN_TEXT),
@@ -117,7 +129,8 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
                 'default' => '',
                 'desc_tip' => true,
             ],
-        );
+        ];
+        $this->form_fields = apply_filters('wc_enkap_settings', $wc_enkap_settings);
     }
 
     public function validate_fields()
@@ -220,23 +233,23 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
     {
         $merchantReferenceId = sanitize_text_field(Helper::getOderMerchantIdFromUrl());
 
-        $order_id = Plugin::getWcOrderIdByMerchantReferenceId($merchantReferenceId);
+        $orderId = Plugin::getWcOrderIdByMerchantReferenceId($merchantReferenceId);
 
-        if (empty($order_id)) {
+        if (empty($orderId)) {
             $this->logger->error(__FILE__, __LINE__, 'OnReturn:: Order Id not found');
             wp_redirect(get_permalink(wc_get_page_id('shop')));
             Helper::exitOrDie();
         }
         $status = filter_input(INPUT_GET, 'status');
 
-        if ($status && ($order = wc_get_order($order_id))) {
+        if ($status && ($order = wc_get_order($orderId))) {
             Plugin::processWebhookStatus($order, sanitize_text_field($status), $merchantReferenceId);
         }
 
-        $shop_page_url = isset($order) ? $order->get_checkout_order_received_url() :
+        $shopPageUrl = isset($order) ? $order->get_checkout_order_received_url() :
             get_permalink(wc_get_page_id('shop'));
 
-        if (wp_redirect($shop_page_url)) {
+        if (wp_redirect($shopPageUrl)) {
             Helper::exitOrDie();
         }
     }
