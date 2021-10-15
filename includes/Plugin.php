@@ -52,7 +52,7 @@ if (!class_exists(Plugin::class)):
             );
 
             $this->mainMenuId = 'admin.php';
-            $this->title = __('E-nkap - Payment Gateway for WooCommerce', self::DOMAIN_TEXT);
+            $this->title = __('SmobilPay for e-commerce - Payment Gateway for WooCommerce', self::DOMAIN_TEXT);
         }
 
         public function register()
@@ -243,7 +243,7 @@ if (!class_exists(Plugin::class)):
             $order->update_status('completed');
             wc_reduce_stock_levels($order->get_id());
             self::applyStatusChange(Status::CONFIRMED_STATUS, $merchantReferenceId);
-            $order->add_order_note(__('E-nkap payment completed', Plugin::DOMAIN_TEXT), true);
+            $order->add_order_note(__('SmobilPay payment completed', Plugin::DOMAIN_TEXT), true);
         }
 
         /**
@@ -251,6 +251,10 @@ if (!class_exists(Plugin::class)):
          */
         private static function processWebhookProgress($order, string $merchantReferenceId, string $realStatus)
         {
+            $currentStatus = $order->get_status();
+            if ($currentStatus === 'completed') {
+                return;
+            }
             $order->update_status('pending');
             self::applyStatusChange($realStatus, $merchantReferenceId);
             do_action('woocommerce_order_edit_status', $order->get_id(), 'pending');
@@ -263,7 +267,7 @@ if (!class_exists(Plugin::class)):
         {
             $order->update_status('cancelled');
             self::applyStatusChange(Status::CANCELED_STATUS, $merchantReferenceId);
-            $order->add_order_note(__('E-nkap payment cancelled', Plugin::DOMAIN_TEXT), true);
+            $order->add_order_note(__('SmobilPay payment cancelled', Plugin::DOMAIN_TEXT), true);
             do_action('woocommerce_order_edit_status', $order->get_id(), 'cancelled');
         }
 
@@ -274,7 +278,7 @@ if (!class_exists(Plugin::class)):
         {
             $order->update_status('failed');
             self::applyStatusChange(Status::FAILED_STATUS, $merchantReferenceId);
-            $order->add_order_note(__('E-nkap payment failed', Plugin::DOMAIN_TEXT), true);
+            $order->add_order_note(__('SmobilPay payment failed', Plugin::DOMAIN_TEXT), true);
             do_action('woocommerce_order_edit_status', $order->get_id(), 'failed');
         }
 

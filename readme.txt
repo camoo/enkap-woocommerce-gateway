@@ -1,6 +1,6 @@
 === Enkap - Mobile Money Gateway for WooCommerce ===
 Contributors: camoo, maviance
-Tags: WooCommerce, Mobile Money, Gateway,Payment Gateways, Shopping Cart, Extension, Invoice, Receipt, Mobile Money, coupons
+Tags: WooCommerce, MoMo, Cameroon, Cameroun, Orange, MTN, Mobile Money, Gateway,Payment Gateways, Shopping Cart, Extension, Invoice, Receipt, Mobile Money, coupons
 Requires at least: 4.8
 Tested up to: 5.8.1
 Requires PHP: 7.3
@@ -8,19 +8,19 @@ Stable tag: 1.0.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
-E-nkap for WooCommerce is a simple and powerful Mobile Money Payment Gateway plugin
+SmobilPay for e-commerce for WooCommerce is a simple and powerful Mobile Money Payment Gateway plugin
 
 == Description ==
 **This is the Mobile Money payment gateway for WooCommerce.**
 
 = About Enkap =
-E-nkap is an online payment service aggregator that allows web users and e-Commerce companies to buy and sell on the Internet using all existing local and international payment methods.
+SmobilPay for e-commerce is an online payment service aggregator that allows web users and e-Commerce companies to buy and sell on the Internet using all existing local and international payment methods.
 We enable digital organisations to accept cash payments, Mobile Money, or payments by cards.
 Offering a simple unique API to enable local businesses to go participate in the huge digital economy by transforming their service offerings into the world of e-commerce sites. Meet your customers where they spend more and more time – online!
 
 = About the plugin =
 Cameroonians avoid online buying because it lacks local payments known to consumers.
-Customers are more likely to finalize a purchase on a site that has their preferred payment options. This E-nkap plugin permits you to use all Mobile money payment gateways available in Cameroon with the WooCommerce plugin. This integration uses a single API. The user experience for the end-user be it tech-savvy or not, is hassle-free.
+Customers are more likely to finalize a purchase on a site that has their preferred payment options. This SmobilPay for e-commerce plugin permits you to use all Mobile money payment gateways available in Cameroon with the WooCommerce plugin. This integration uses a single API. The user experience for the end-user be it tech-savvy or not, is hassle-free.
 
 = Features =
 * Pay with Cameroon MTN Mobile Money
@@ -45,12 +45,12 @@ This plugin is a FREE download.
 == Installation ==
 = Installation =
 1. In your WordPress Dashboard go to "Plugins" -> "Add Plugin".
-2. Search for "E-nkap Payment".
+2. Search for "SmobilPay".
 3. Install the plugin by pressing the "Install" button.
 4. Activate the plugin by pressing the "Activate" button.
 5. Open the settings page for WooCommerce and click the "Payments" tab.
-6. Click on the line for "E-nkap Payment. Smobilpay for e-commerce".
-7. Configure your E-nkap Gateway settings.
+6. Click on the line for "SmobilPay for e-commerce Payment".
+7. Configure your SmobilPay for e-commerce Gateway settings.
 
 More details can be found on the [documentation website](https://support.enkap.cm)
 
@@ -78,6 +78,9 @@ More details can be found on the [documentation website](https://support.enkap.c
 N/A
 
 == Changelog ==
+= 1.0.2: October 12, 2021 =
+* Tweak: E-nkap renamed to SmobilPay for e-commerce
+
 = 1.0.1: October 12, 2021 =
 * Fix: AccessToken in cache for production and develop
 * Tweak: Unneeded redirection hooks removed

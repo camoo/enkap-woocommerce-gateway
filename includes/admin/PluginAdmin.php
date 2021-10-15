@@ -126,8 +126,8 @@ if (!class_exists(PluginAdmin::class)):
         public function onAdminMenu()
         {
             add_menu_page(
-                'E-nkap',
-                'E-nkap',
+                'SmobilPay for e-commerce',
+                'SmobilPay for e-commerce',
                 'manage_options',
                 $this->mainMenuId,
                 array(&$this, 'display'),
@@ -153,8 +153,8 @@ if (!class_exists(PluginAdmin::class)):
             $new_columns = (is_array($columns)) ? $columns : [];
             unset($new_columns['wc_actions']);
 
-            $new_columns['merchant_reference_id'] = __('e-nkap Merchant Reference ID', Plugin::DOMAIN_TEXT);
-            $new_columns['order_transaction_id'] = __('e-nkap Transaction ID', Plugin::DOMAIN_TEXT);
+            $new_columns['merchant_reference_id'] = __('SmobilPay Merchant Reference ID', Plugin::DOMAIN_TEXT);
+            $new_columns['order_transaction_id'] = __('SmobilPay Transaction ID', Plugin::DOMAIN_TEXT);
 
             $new_columns['wc_actions'] = $columns['wc_actions'];
             return $new_columns;

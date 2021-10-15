@@ -55,7 +55,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
         $wc_enkap_settings = [
             'enabled' => [
                 'title' => __('Enable/Disable', Plugin::DOMAIN_TEXT),
-                'label' => __('Enable E-nkap Payment', Plugin::DOMAIN_TEXT),
+                'label' => __('Enable SmobilPay for e-commerce Payment', Plugin::DOMAIN_TEXT),
                 'type' => 'checkbox',
                 'description' => '',
                 'default' => 'no'
@@ -64,21 +64,21 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
                 'title' => __('Title', 'woocommerce'),
                 'type' => 'text',
                 'description' => __('This controls the title which the user sees during checkout.', 'woocommerce'),
-                'default' => __('E-nkap Payment. Smobilpay for e-commerce', Plugin::DOMAIN_TEXT),
+                'default' => __('SmobilPay for e-commerce Payment.', Plugin::DOMAIN_TEXT),
                 'desc_tip' => true,
             ],
             'description' => [
                 'title' => __('Description', 'woocommerce'),
                 'type' => 'textarea',
                 'description' => __('This controls the description which the user sees during checkout.', 'woocommerce'),
-                'default' => __('Pay with your mobile phone via E-nkap payment gateway.', Plugin::DOMAIN_TEXT),
+                'default' => __('Pay with your mobile phone via SmobilPay for e-commerce payment gateway.', Plugin::DOMAIN_TEXT),
                 'desc_tip' => true,
             ],
             'instructions' => [
                 'title' => __('Instructions', 'woocommerce'),
                 'type' => 'textarea',
                 'description' => __('Instructions that will be added to the thank you page.', 'woocommerce'),
-                'default' => __('Secured Payment with Enkap. Smobilpay for e-commerce', Plugin::DOMAIN_TEXT),
+                'default' => __('Secured Payment with Smobilpay for e-commerce', Plugin::DOMAIN_TEXT),
                 'desc_tip' => true,
             ],
             'test_mode' => [
@@ -91,7 +91,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
             ],
             'enkap_currency' => [
                 'title' => __('Currency', 'woocommerce'),
-                'label' => __('E-nkap Currency', Plugin::DOMAIN_TEXT),
+                'label' => __('SmobilPay Currency', Plugin::DOMAIN_TEXT),
                 'type' => 'select',
                 'description' => __('Define the currency to place your payments', Plugin::DOMAIN_TEXT),
                 'default' => 'XAF',
@@ -103,7 +103,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
                 'type' => 'title',
                 'description' => wp_kses(
                     sprintf(
-                        __('Enter your E-nkap API credentials to process Payments via E-nkap. Learn how to access your <a href="%s" target="_blank" rel="noopener noreferrer">E-nkap API Credentials</a>.',
+                        __('Enter your SmobilPay for e-commerce API credentials to process Payments via SmobilPay for e-commerce. Learn how to access your <a href="%s" target="_blank" rel="noopener noreferrer">SmobilPay for e-commerce API Credentials</a>.',
                             Plugin::DOMAIN_TEXT)
                         , 'https://enkap.cm/faq/'),
                     [
@@ -118,14 +118,14 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
             'enkap_key' => [
                 'title' => __('Consumer Key', Plugin::DOMAIN_TEXT),
                 'type' => 'text',
-                'description' => __('Get your API Consumer Key from E-nkap.', Plugin::DOMAIN_TEXT),
+                'description' => __('Get your API Consumer Key from SmobilPay for e-commerce.', Plugin::DOMAIN_TEXT),
                 'default' => '',
                 'desc_tip' => true,
             ],
             'enkap_secret' => [
                 'title' => __('Consumer Secret', Plugin::DOMAIN_TEXT),
                 'type' => 'password',
-                'description' => __('Get your API Consumer Secret from E-nkap.', Plugin::DOMAIN_TEXT),
+                'description' => __('Get your API Consumer Secret from SmobilPay for e-commerce.', Plugin::DOMAIN_TEXT),
                 'default' => '',
                 'desc_tip' => true,
             ],
@@ -205,7 +205,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
             $response = $orderService->place($order);
 
             $wc_order->update_status('on-hold',
-                __('Awaiting E-nkap payment confirmation', Plugin::DOMAIN_TEXT));
+                __('Awaiting SmobilPay payment confirmation', Plugin::DOMAIN_TEXT));
 
             // Empty cart
             WC()->cart->empty_cart();
@@ -315,7 +315,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
         $icon_html = '';
         $icon = WC_HTTPS::force_https_url(plugin_dir_url(__FILE__) . 'assets/images/e-nkap.png');
         $icon_html .= '<img src="' . esc_attr($icon) . '" alt="' .
-            esc_attr__('E-nkap acceptance mark', Plugin::DOMAIN_TEXT) . '" />';
+            esc_attr__('SmobilPay for e-commerce acceptance mark', Plugin::DOMAIN_TEXT) . '" />';
         return apply_filters('woocommerce_gateway_icon', $icon_html, $this->id);
     }
 }
