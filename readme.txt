@@ -1,14 +1,14 @@
-=== Enkap - Mobile Money Gateway for WooCommerce ===
+=== SmobilPay for e-commerce - Mobile Money Gateway for WooCommerce ===
 Contributors: camoo, maviance
 Tags: WooCommerce, MoMo, Cameroon, Cameroun, Orange, MTN, Mobile Money, Gateway,Payment Gateways, Shopping Cart, Extension, Invoice, Receipt, Mobile Money, coupons
 Requires at least: 4.8
 Tested up to: 5.8.1
 Requires PHP: 7.3
-Stable tag: 1.0.1
+Stable tag: 1.0.2
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
-SmobilPay for e-commerce for WooCommerce is a simple and powerful Mobile Money Payment Gateway plugin
+SmobilPay for WooCommerce is a simple and powerful Mobile Money Payment Gateway plugin
 
 == Description ==
 **This is the Mobile Money payment gateway for WooCommerce.**
@@ -31,7 +31,7 @@ Customers are more likely to finalize a purchase on a site that has their prefer
 == Frequently Asked Questions ==
 
 = PHP 8 Support? =
-Yes! enkap-woocommerce-gateway is compatible with PHP version 8.0. We strongly recommend at least the use of PHP 7.3 to enjoy all the features offered
+Yes! SmobilPay for WooCommerce is compatible with PHP version 8.0. We strongly recommend at least the use of PHP 7.3 to enjoy all the features offered
 
 = How to get my access keys? =
 All you need is just to [create an account](https://enkap.cm/) and then ask our team for consumer key pairs.
@@ -78,8 +78,9 @@ More details can be found on the [documentation website](https://support.enkap.c
 N/A
 
 == Changelog ==
-= 1.0.2: October 12, 2021 =
+= 1.0.2: October 15, 2021 =
 * Tweak: E-nkap renamed to SmobilPay for e-commerce
+* Fix: Avoid update completed payment status
 
 = 1.0.1: October 12, 2021 =
 * Fix: AccessToken in cache for production and develop
