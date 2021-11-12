@@ -4,8 +4,8 @@
  * Plugin Name: SmobilPay for e-commerce - Mobile Money Gateway for WooCommerce
  * Plugin URI: https://enkap.cm/
  * Description: Receive Mobile Money payments on your store using SmobilPay for e-commerce.
- * Version: 1.0.2
- * Tested up to: 5.8.1
+ * Version: 1.0.3
+ * Tested up to: 5.8.2
  * WC requires at least: 3.2
  * WC tested up to: 5.7.1
  * Author: Camoo Sarl
@@ -39,6 +39,6 @@ require_once(__DIR__ . '/includes/admin/PluginAdmin.php');
         __('Do you have any questions or requests?', Plugin::DOMAIN_TEXT),
         'https://github.com/camoo/enkap-woocommerce-gateway',
         __('Do you like our plugin and can recommend to others.', Plugin::DOMAIN_TEXT)),
-    '1.0.2'
+    '1.0.3'
 )
 )->register();
