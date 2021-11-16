@@ -91,7 +91,7 @@ More details can be found on the [documentation website](https://support.enkap.c
 N/A
 
 == Changelog ==
-= 1.0.3: November xx, 2021 =
+= 1.0.3: November 16, 2021 =
 * New: Hook smobilpay_after_status_change added
 
 = 1.0.2: October 22, 2021 =
