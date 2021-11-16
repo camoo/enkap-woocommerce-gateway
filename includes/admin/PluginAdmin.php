@@ -25,7 +25,7 @@ if (!class_exists(PluginAdmin::class)):
         protected $author;
         protected $isRegistered;
 
-        public static function instance() :?self
+        public static function instance(): ?self
         {
             if (!isset(self::$instance)) {
                 self::$instance = new self();
@@ -85,7 +85,11 @@ if (!class_exists(PluginAdmin::class)):
                     $paymentData = self::getPaymentByWcOrderId($order->get_id());
                     if ($paymentData) {
                         $status = $statusService->getByTransactionId($paymentData->order_transaction_id);
-                        Plugin::processWebhookStatus($order, $status->getCurrent(), $paymentData->merchant_reference_id);
+                        Plugin::processWebhookStatus(
+                            $order,
+                            $status->getCurrent(),
+                            $paymentData->merchant_reference_id
+                        );
                     }
                 }
             }

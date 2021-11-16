@@ -19,7 +19,7 @@ if (!class_exists(Plugin::class)):
 
     class Plugin
     {
-        public const WP_WC_ENKAP_DB_VERSION = '1.0.2';
+        public const WP_WC_ENKAP_DB_VERSION = '1.0.3';
         public const DOMAIN_TEXT = 'wc-wp-enkap';
         public const WC_ENKAP_GATEWAY_ID = 'e_nkap';
         protected $id;
@@ -300,6 +300,29 @@ if (!class_exists(Plugin::class)):
                     'merchant_reference_id' => sanitize_text_field($merchantReferenceId)
                 ]
             );
+
+            /**
+             * Executes the hook smobilpay_after_status_change where ever it's defined.
+             *
+             * Example usage:
+             *
+             *     // The action callback function.
+             *     function example_callback( $id, $shopType ) {
+             *         // (maybe) do something with the args.
+             *     }
+             *
+             *     add_action( 'smobilpay_after_status_change', 'example_callback', 10, 2 );
+             *
+             *     /*
+             *      * Trigger the actions by calling the 'example_callback()' function
+             *      * that's hooked onto `smobilpay_after_status_change`.
+             *
+             *      * - $id is either the transaction ID or the merchant reference ID
+             *      * - $shopType is the shop invoked actually the hook
+             *
+             * @since 1.0.3
+             */
+            do_action('smobilpay_after_status_change', sanitize_text_field($merchantReferenceId), 'wc');
 
         }
     }
