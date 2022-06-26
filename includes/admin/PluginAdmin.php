@@ -16,22 +16,16 @@ use WC_Order_Refund;
 
 defined('ABSPATH') || exit;
 
-if (!class_exists(PluginAdmin::class)):
-
+if (!class_exists(PluginAdmin::class)) {
     class PluginAdmin
     {
         protected static $instance = null;
-        protected $mainMenuId;
-        protected $author;
-        protected $isRegistered;
 
-        public static function instance(): ?self
-        {
-            if (!isset(self::$instance)) {
-                self::$instance = new self();
-            }
-            return self::$instance;
-        }
+        protected $mainMenuId;
+
+        protected $author;
+
+        protected $isRegistered;
 
         public function __construct()
         {
@@ -40,9 +34,18 @@ if (!class_exists(PluginAdmin::class)):
             $this->isRegistered = false;
         }
 
+        public static function instance(): ?self
+        {
+            if (!isset(self::$instance)) {
+                self::$instance = new self();
+            }
+
+            return self::$instance;
+        }
+
         public function register()
         {
-            require_once(ABSPATH . 'wp-admin/includes/plugin.php');
+            require_once ABSPATH . 'wp-admin/includes/plugin.php';
 
             if ($this->isRegistered) {
                 return;
@@ -63,12 +66,10 @@ if (!class_exists(PluginAdmin::class)):
                 'admin_enkap_style',
                 plugins_url('/includes/assets/css/admin-style.css', dirname(__DIR__))
             );
-
         }
 
         public static function checkRemotePaymentStatus()
         {
-
             if (current_user_can('edit_shop_orders') &&
                 check_admin_referer('woocommerce_enkap_check_status') &&
                 isset($_GET['status'], $_GET['order_id'])) {
@@ -98,11 +99,7 @@ if (!class_exists(PluginAdmin::class)):
             Helper::exitOrDie();
         }
 
-        /**
-         * @param array $actions
-         * @param $order
-         * @return array
-         */
+        /** @param $order */
         public static function add_custom_order_status_actions_button(array $actions, $order): array
         {
             if ($order->get_payment_method() !== Plugin::WC_ENKAP_GATEWAY_ID) {
@@ -118,7 +115,8 @@ if (!class_exists(PluginAdmin::class)):
                 'url' => wp_nonce_url(
                     admin_url('admin-ajax.php?action=e_nkap_mark_order_status&status=check&order_id=' .
                         absint(wp_unslash($order_id))),
-                    'woocommerce_enkap_check_status'),
+                    'woocommerce_enkap_check_status'
+                ),
                 'name' => __('Check status', Plugin::DOMAIN_TEXT),
                 'title' => __('Check remote order status', Plugin::DOMAIN_TEXT),
                 'action' => 'check',
@@ -134,17 +132,18 @@ if (!class_exists(PluginAdmin::class)):
                 'SmobilPay for e-commerce',
                 'manage_options',
                 $this->mainMenuId,
-                array(&$this, 'display'),
+                [&$this, 'display'],
                 '',
-                #plugins_url('includes/assets/images/multi-shipping.png', dirname(__FILE__, 2)),
                 26
             );
 
-            add_submenu_page($this->mainMenuId,
+            add_submenu_page(
+                $this->mainMenuId,
                 'About',
                 'About',
                 'manage_options',
-                $this->mainMenuId);
+                $this->mainMenuId
+            );
         }
 
         public function display()
@@ -161,6 +160,7 @@ if (!class_exists(PluginAdmin::class)):
             $new_columns['order_transaction_id'] = __('SmobilPay Transaction ID', Plugin::DOMAIN_TEXT);
 
             $new_columns['wc_actions'] = $columns['wc_actions'];
+
             return $new_columns;
         }
 
@@ -187,7 +187,8 @@ if (!class_exists(PluginAdmin::class)):
 
             $db_prepare = $wpdb->prepare(
                 "SELECT * FROM `{$wpdb->prefix}wc_enkap_payments` WHERE `wc_order_id` = %s",
-                absint(wp_unslash($wcOrderId)));
+                absint(wp_unslash($wcOrderId))
+            );
             $payment = $wpdb->get_row($db_prepare);
 
             if (!$payment) {
@@ -197,5 +198,4 @@ if (!class_exists(PluginAdmin::class)):
             return $payment;
         }
     }
-
-endif;
+}

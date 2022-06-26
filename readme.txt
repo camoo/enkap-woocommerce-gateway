@@ -2,9 +2,9 @@
 Contributors: camoo, maviance
 Tags: Gateway, Mobile Money, Orange Money, Payment Aggregator, WooCommerce, e-Commerce, Cameroon, Cameroun, MTN, Orange, payment platform, momo, OM, YUP,
 Requires at least: 4.8
-Tested up to: 5.8.2
+Tested up to: 6.0
 Requires PHP: 7.3
-Stable tag: 1.0.3
+Stable tag: 1.0.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -91,6 +91,11 @@ More details can be found on the [documentation website](https://support.enkap.c
 N/A
 
 == Changelog ==
+
+= 1.0.4: June 26, 2022 =
+* Fix: Guzzle libraries updated
+* Tweak: Indent improved
+
 = 1.0.3: November 16, 2021 =
 * New: Hook smobilpay_after_status_change added
 
