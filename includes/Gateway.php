@@ -19,12 +19,12 @@ defined('ABSPATH') || exit;
 
 class WC_Enkap_Gateway extends WC_Payment_Gateway
 {
-    private $_key;
+    private string $_key;
     private $_secret;
     private $instructions;
-    private $testMode;
+    private bool $testMode;
     /** @var Logger\Logger $logger */
-    private $logger;
+    private Logger\Logger $logger;
 
     public function __construct()
     {
