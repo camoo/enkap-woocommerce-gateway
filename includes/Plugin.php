@@ -15,27 +15,42 @@ use WC_Order_Refund;
 use WP_REST_Server;
 
 defined('ABSPATH') || exit;
-if (!class_exists(Plugin::class)):
-
+if (!class_exists(Plugin::class)) {
     class Plugin
     {
-        public const WP_WC_ENKAP_DB_VERSION = '1.0.3';
-        public const DOMAIN_TEXT = 'wc-wp-enkap';
-        public const WC_ENKAP_GATEWAY_ID = 'e_nkap';
-        protected $id;
-        protected $mainMenuId;
-        protected $adapterName;
-        protected $title;
-        protected $description;
-        protected $optionKey;
-        protected $settings;
-        protected $adapterFile;
-        protected $pluginPath;
-        protected $version;
-        protected $image_format = 'full';
+        public const WP_WC_ENKAP_DB_VERSION = '1.0.4';
 
-        public function __construct($pluginPath, $adapterName, $adapterFile, $description = '', $version = null)
-        {
+        public const DOMAIN_TEXT = 'wc-wp-enkap';
+
+        public const WC_ENKAP_GATEWAY_ID = 'e_nkap';
+
+        protected string $id;
+
+        protected string $mainMenuId;
+
+        protected string $adapterName;
+
+        protected ?string $title;
+
+        protected string $description;
+
+        protected string $optionKey;
+
+        protected array $settings;
+
+        protected string $adapterFile;
+
+        protected string $pluginPath;
+
+        protected ?string $version;
+
+        public function __construct(
+            string $pluginPath,
+            string $adapterName,
+            string $adapterFile,
+            string $description = '',
+            ?string $version = null
+        ) {
             $this->id = basename($pluginPath, '.php');
             $this->pluginPath = $pluginPath;
             $this->adapterName = $adapterName;
@@ -43,21 +58,21 @@ if (!class_exists(Plugin::class)):
             $this->description = $description;
             $this->version = $version;
             $this->optionKey = '';
-            $this->settings = array(
+            $this->settings = [
                 'live' => '1',
                 'accountId' => '',
                 'apiKey' => '',
                 'notifyForStatus' => [],
-                'completeOrderForStatuses' => []
-            );
+                'completeOrderForStatuses' => [],
+            ];
 
             $this->mainMenuId = 'admin.php';
             $this->title = __('SmobilPay for e-commerce - Payment Gateway for WooCommerce', self::DOMAIN_TEXT);
         }
 
-        public function register()
+        public function register(): void
         {
-            require_once(ABSPATH . 'wp-admin/includes/plugin.php');
+            require_once ABSPATH . 'wp-admin/includes/plugin.php';
             require_once __DIR__ . '/Install.php';
             // do not register when WooCommerce is not enabled
             if (!is_plugin_active('woocommerce/woocommerce.php')) {
@@ -66,23 +81,27 @@ if (!class_exists(Plugin::class)):
             register_activation_hook($this->pluginPath, [Install::class, 'install']);
 
             add_filter('woocommerce_payment_gateways', [$this, 'onAddGatewayClass']);
-            add_filter('plugin_action_links_' . plugin_basename($this->pluginPath),
-                [$this, 'onPluginActionLinks'], 1, 1);
+            add_filter(
+                'plugin_action_links_' . plugin_basename($this->pluginPath),
+                [$this, 'onPluginActionLinks'],
+                1,
+                1
+            );
             add_action('plugins_loaded', [$this, 'onInit']);
-            add_action('wp_enqueue_scripts', [__CLASS__, 'enqueue_block_enkap_css_scripts']);
+            add_action('wp_enqueue_scripts', [__CLASS__, 'enqueueSmobilScripts']);
 
-            register_deactivation_hook($this->pluginPath, [$this, 'route_status_plugin_deactivate']);
+            register_deactivation_hook($this->pluginPath, [$this, 'disablePluginRoute']);
             if (is_admin()) {
                 PluginAdmin::instance()->register();
             }
         }
 
-        public function route_status_plugin_deactivate()
+        public function disablePluginRoute(): void
         {
             flush_rewrite_rules();
         }
 
-        public static function enqueue_block_enkap_css_scripts(): void
+        public static function enqueueSmobilScripts(): void
         {
             wp_enqueue_style(
                 'enkap_style',
@@ -92,16 +111,17 @@ if (!class_exists(Plugin::class)):
 
         public function onAddGatewayClass($gateways)
         {
-            $gateways[] = WC_Enkap_Gateway::class;
+            $gateways[] = WooCommerceEnkapGateway::class;
+
             return $gateways;
         }
 
-        public function onInit()
+        public function onInit(): void
         {
             $this->loadGatewayClass();
             add_action('init', [__CLASS__, 'loadTextDomain']);
-            add_action('rest_api_init', [$this, 'notification_route']);
-            add_action('rest_api_init', [$this, 'return_route']);
+            add_action('rest_api_init', [$this, 'notificationRoute']);
+            add_action('rest_api_init', [$this, 'returnRoute']);
         }
 
         public function onPluginActionLinks($links)
@@ -112,27 +132,31 @@ if (!class_exists(Plugin::class)):
                 __('Settings', self::DOMAIN_TEXT)
             );
             array_unshift($links, $link);
+
             return $links;
         }
 
-        public function loadGatewayClass()
+        public function loadGatewayClass(): void
         {
             if (class_exists('\\Camoo\\Enkap\\WooCommerce\\' . $this->adapterName)) {
                 return;
             }
-            include_once(dirname(__DIR__) . '/includes/Gateway.php');
-            include_once(dirname(__DIR__) . '/vendor/autoload.php');
+            include_once dirname(__DIR__) . '/includes/WooCommerceEnkapGateway.php';
+            include_once dirname(__DIR__) . '/vendor/autoload.php';
             require_once __DIR__ . '/Logger/Logger.php';
         }
 
-        public static function get_webhook_url($endpoint): string
+        public static function getWebHookUrl($endpoint): string
         {
             if (get_option('permalink_structure')) {
                 return trailingslashit(get_home_url()) . 'wp-json/wc-e-nkap/' . sanitize_text_field($endpoint);
             }
 
-            return add_query_arg('rest_route', '/wc-e-nkap/' . sanitize_text_field($endpoint),
-                trailingslashit(get_home_url()));
+            return add_query_arg(
+                'rest_route',
+                '/wc-e-nkap/' . sanitize_text_field($endpoint),
+                trailingslashit(get_home_url())
+            );
         }
 
         public static function getWcOrderIdByMerchantReferenceId(string $merchantReferenceId): ?int
@@ -144,7 +168,8 @@ if (!class_exists(Plugin::class)):
 
             $db_prepare = $wpdb->prepare(
                 "SELECT * FROM `{$wpdb->prefix}wc_enkap_payments` WHERE `merchant_reference_id` = %s",
-                $merchantReferenceId);
+                $merchantReferenceId
+            );
             $payment = $wpdb->get_row($db_prepare);
 
             if (!$payment) {
@@ -177,21 +202,22 @@ if (!class_exists(Plugin::class)):
             );
         }
 
-        public function return_route()
+        public function returnRoute(): void
         {
+            // return url. /wc-e-nkap/return/<transaction-id>?status=<valid-status>
             register_rest_route(
                 'wc-e-nkap/return',
-                '/(.*?)',
+                '/([^/]+)?',
                 [
                     'methods' => WP_REST_Server::READABLE,
-                    'callback' => [new WC_Enkap_Gateway(), 'onReturn'],
+                    'callback' => [new WooCommerceEnkapGateway(), 'onReturn'],
                     'permission_callback' => '__return_true',
                     'args' => [
                         'status' => [
-                            'required' => true,
-                            'validate_callback' => function ($param) {
+                            'required' => true, // this value is true. That ensure reliable validation
+                            'validate_callback' => function (string $param) {
                                 return in_array($param, Status::getAllowedStatus());
-                            }
+                            },
                         ],
                     ],
                 ]
@@ -199,21 +225,22 @@ if (!class_exists(Plugin::class)):
             flush_rewrite_rules();
         }
 
-        public function notification_route()
+        public function notificationRoute(): void
         {
+            // notification url. /wc-e-nkap/notification/<transaction-id>?status=<valid-status>
             register_rest_route(
                 'wc-e-nkap/notification',
-                '/(.*?)',
+                '/([^/]+)?',
                 [
                     'methods' => 'PUT',
-                    'callback' => [new WC_Enkap_Gateway(), 'onNotification'],
+                    'callback' => [new WooCommerceEnkapGateway(), 'onNotification'],
                     'permission_callback' => '__return_true',
                 ]
             );
             flush_rewrite_rules();
         }
 
-        public static function processWebhookStatus($order, string $status, string $merchantReferenceId)
+        public static function processWebhookStatus($order, string $status, string $merchantReferenceId): void
         {
             switch (sanitize_text_field($status)) {
                 case Status::IN_PROGRESS_STATUS:
@@ -235,9 +262,7 @@ if (!class_exists(Plugin::class)):
             }
         }
 
-        /**
-         * @param bool|WC_Order|WC_Order_Refund $order
-         */
+        /** @param bool|WC_Order|WC_Order_Refund $order */
         private static function processWebhookConfirmed($order, string $merchantReferenceId)
         {
             $order->update_status('completed');
@@ -246,9 +271,7 @@ if (!class_exists(Plugin::class)):
             $order->add_order_note(__('SmobilPay payment completed', Plugin::DOMAIN_TEXT), true);
         }
 
-        /**
-         * @param bool|WC_Order|WC_Order_Refund $order
-         */
+        /** @param bool|WC_Order|WC_Order_Refund $order */
         private static function processWebhookProgress($order, string $merchantReferenceId, string $realStatus)
         {
             $currentStatus = $order->get_status();
@@ -260,9 +283,7 @@ if (!class_exists(Plugin::class)):
             do_action('woocommerce_order_edit_status', $order->get_id(), 'pending');
         }
 
-        /**
-         * @param bool|WC_Order|WC_Order_Refund $order
-         */
+        /** @param bool|WC_Order|WC_Order_Refund $order */
         private static function processWebhookCanceled($order, string $merchantReferenceId)
         {
             $order->update_status('cancelled');
@@ -271,9 +292,7 @@ if (!class_exists(Plugin::class)):
             do_action('woocommerce_order_edit_status', $order->get_id(), 'cancelled');
         }
 
-        /**
-         * @param bool|WC_Order|WC_Order_Refund $order
-         */
+        /** @param bool|WC_Order|WC_Order_Refund $order */
         private static function processWebhookFailed($order, string $merchantReferenceId)
         {
             $order->update_status('failed');
@@ -288,16 +307,16 @@ if (!class_exists(Plugin::class)):
             $remoteIp = WC_Geolocation::get_ip_address();
             $setData = [
                 'status_date' => current_time('mysql'),
-                'status' => sanitize_title($status)
+                'status' => sanitize_title($status),
             ];
             if ($remoteIp) {
                 $setData['remote_ip'] = sanitize_text_field($remoteIp);
             }
             $wpdb->update(
-                $wpdb->prefix . "wc_enkap_payments",
+                $wpdb->prefix . 'wc_enkap_payments',
                 $setData,
                 [
-                    'merchant_reference_id' => sanitize_text_field($merchantReferenceId)
+                    'merchant_reference_id' => sanitize_text_field($merchantReferenceId),
                 ]
             );
 
@@ -323,8 +342,6 @@ if (!class_exists(Plugin::class)):
              * @since 1.0.3
              */
             do_action('smobilpay_after_status_change', sanitize_text_field($merchantReferenceId), 'wc');
-
         }
     }
-
-endif;
+}

@@ -3,11 +3,11 @@
 namespace Camoo\Enkap\WooCommerce;
 
 use Enkap\OAuth\Lib\Helper;
+use Enkap\OAuth\Model\CallbackUrl;
 use Enkap\OAuth\Model\Order;
 use Enkap\OAuth\Model\Status;
-use Enkap\OAuth\Services\OrderService;
 use Enkap\OAuth\Services\CallbackUrlService;
-use Enkap\OAuth\Model\CallbackUrl;
+use Enkap\OAuth\Services\OrderService;
 use Throwable;
 use WC_HTTPS;
 use WC_Payment_Gateway;
@@ -16,14 +16,16 @@ use WP_REST_Server;
 
 defined('ABSPATH') || exit;
 
-
-class WC_Enkap_Gateway extends WC_Payment_Gateway
+class WooCommerceEnkapGateway extends WC_Payment_Gateway
 {
-    private string $_key;
-    private $_secret;
-    private $instructions;
+    private string $consumerKey;
+
+    private string $consumerSecret;
+
+    private string $instructions;
+
     private bool $testMode;
-    /** @var Logger\Logger $logger */
+
     private Logger\Logger $logger;
 
     public function __construct()
@@ -43,8 +45,8 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
         $this->description = esc_html($this->get_option('description'));
         $this->instructions = esc_html($this->get_option('instructions'));
 
-        $this->_key = sanitize_text_field($this->get_option('enkap_key'));
-        $this->_secret = sanitize_text_field($this->get_option('enkap_secret'));
+        $this->consumerKey = sanitize_text_field($this->get_option('enkap_key'));
+        $this->consumerSecret = sanitize_text_field($this->get_option('enkap_secret'));
 
         add_action('woocommerce_update_options_payment_gateways_' . $this->id, [$this, 'process_admin_options']);
         $this->logger = new Logger\Logger($this->id, WP_DEBUG || $this->testMode);
@@ -52,13 +54,13 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
 
     public function init_form_fields()
     {
-        $wc_enkap_settings = [
+        $settings = [
             'enabled' => [
                 'title' => __('Enable/Disable', Plugin::DOMAIN_TEXT),
                 'label' => __('Enable SmobilPay for e-commerce Payment', Plugin::DOMAIN_TEXT),
                 'type' => 'checkbox',
                 'description' => '',
-                'default' => 'no'
+                'default' => 'no',
             ],
             'title' => [
                 'title' => __('Title', 'woocommerce'),
@@ -103,9 +105,12 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
                 'type' => 'title',
                 'description' => wp_kses(
                     sprintf(
-                        __('Enter your SmobilPay for e-commerce API credentials to process Payments via SmobilPay for e-commerce. Learn how to access your <a href="%s" target="_blank" rel="noopener noreferrer">SmobilPay for e-commerce API Credentials</a>.',
-                            Plugin::DOMAIN_TEXT)
-                        , 'https://enkap.cm/faq/'),
+                        __(
+                            'Enter your SmobilPay for e-commerce API credentials to process Payments via SmobilPay for e-commerce. Learn how to access your <a href="%s" target="_blank" rel="noopener noreferrer">SmobilPay for e-commerce API Credentials</a>.',
+                            Plugin::DOMAIN_TEXT
+                        ),
+                        'https://enkap.cm/faq/'
+                    ),
                     [
                         'a' => [
                             'href' => true,
@@ -130,15 +135,17 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
                 'desc_tip' => true,
             ],
         ];
-        $this->form_fields = apply_filters('wc_enkap_settings', $wc_enkap_settings);
+        $this->form_fields = apply_filters('wc_enkap_settings', $settings);
     }
 
     public function validate_fields()
     {
         if (empty($_POST['billing_first_name'])) {
             wc_add_notice('First name is required!', 'error');
+
             return false;
         }
+
         return true;
     }
 
@@ -146,49 +153,51 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
     {
         parent::process_admin_options();
 
-        $this->_key = sanitize_text_field($this->get_option('enkap_key'));
-        $this->_secret = sanitize_text_field($this->get_option('enkap_secret'));
-        $setup = new CallbackUrlService($this->_key, $this->_secret, [], $this->testMode);
+        $this->consumerKey = sanitize_text_field($this->get_option('enkap_key'));
+        $this->consumerSecret = sanitize_text_field($this->get_option('enkap_secret'));
+        $setup = new CallbackUrlService($this->consumerKey, $this->consumerSecret, [], $this->testMode);
         /** @var CallbackUrl $callBack */
         $callBack = $setup->loadModel(CallbackUrl::class);
-        $callBack->return_url = Plugin::get_webhook_url('return');
-        $callBack->notification_url = Plugin::get_webhook_url('notification');
+        $callBack->return_url = Plugin::getWebHookUrl('return');
+        $callBack->notification_url = Plugin::getWebHookUrl('notification');
         if ($setup->set($callBack)) {
             $this->logger->info(
                 __FILE__,
                 __LINE__,
-                __('Return and Notification Urls setup successfully', Plugin::DOMAIN_TEXT));
+                __('Return and Notification Urls setup successfully', Plugin::DOMAIN_TEXT)
+            );
         } else {
             $this->logger->error(
                 __FILE__,
                 __LINE__,
-                __('Return and Notification Urls could not be setup', Plugin::DOMAIN_TEXT));
+                __('Return and Notification Urls could not be setup', Plugin::DOMAIN_TEXT)
+            );
         }
     }
 
     public function process_payment($order_id)
     {
-        $wc_order = wc_get_order(absint(wp_unslash($order_id)));
+        $newOrder = wc_get_order(absint(wp_unslash($order_id)));
 
-        $orderService = new OrderService($this->_key, $this->_secret, [], $this->testMode);
+        $orderService = new OrderService($this->consumerKey, $this->consumerSecret, [], $this->testMode);
 
         $order = $orderService->loadModel(Order::class);
 
-        $order_data = $wc_order->get_data();
+        $rawOrderData = $newOrder->get_data();
 
         $merchantReferenceId = wp_generate_uuid4();
         $orderData = [
             'merchantReference' => $merchantReferenceId,
-            'email' => $order_data['billing']['email'],
-            'customerName' => $order_data['billing']['first_name'] . ' ' . $order_data['billing']['last_name'],
-            'totalAmount' => (float)$order_data['total'],
+            'email' => $rawOrderData['billing']['email'],
+            'customerName' => $rawOrderData['billing']['first_name'] . ' ' . $rawOrderData['billing']['last_name'],
+            'totalAmount' => (float)$rawOrderData['total'],
             'description' => __('Payment from', Plugin::DOMAIN_TEXT) . ' ' . get_bloginfo('name'),
             'currency' => sanitize_text_field($this->get_option('enkap_currency')),
             'langKey' => Plugin::getLanguageKey(),
-            'items' => []
+            'items' => [],
         ];
 
-        foreach ($wc_order->get_items() as $item) {
+        foreach ($newOrder->get_items() as $item) {
             $product = $item->get_product();
 
             $orderData['items'][] = [
@@ -196,7 +205,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
                 'particulars' => $item->get_name(),
                 'unitCost' => (float)$product->get_price(),
                 'subTotal' => (float)$item->get_subtotal(),
-                'quantity' => $item->get_quantity()
+                'quantity' => $item->get_quantity(),
             ];
         }
 
@@ -204,8 +213,10 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
             $order->fromStringArray($orderData);
             $response = $orderService->place($order);
 
-            $wc_order->update_status('on-hold',
-                __('Awaiting SmobilPay payment confirmation', Plugin::DOMAIN_TEXT));
+            $newOrder->update_status(
+                'on-hold',
+                __('Awaiting SmobilPay payment confirmation', Plugin::DOMAIN_TEXT)
+            );
 
             // Empty cart
             WC()->cart->empty_cart();
@@ -215,21 +226,24 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
                 $merchantReferenceId,
                 sanitize_text_field($response->getOrderTransactionId())
             );
-            $wc_order->add_order_note(
+            $newOrder->add_order_note(
                 __('Your order is under process. Thank you!', Plugin::DOMAIN_TEXT),
-                true);
-            return array(
-                'result' => 'success',
-                'redirect' => $response->getRedirectUrl()
+                true
             );
+
+            return [
+                'result' => 'success',
+                'redirect' => $response->getRedirectUrl(),
+            ];
         } catch (Throwable $exception) {
             $this->logger->error(__FILE__, __LINE__, $exception->getMessage());
             wc_add_notice($exception->getMessage(), 'error');
         }
+
         return null;
     }
 
-    public function onReturn()
+    public function onReturn(): void
     {
         $merchantReferenceId = sanitize_text_field(Helper::getOderMerchantIdFromUrl());
 
@@ -262,9 +276,10 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
 
         if (empty($orderId)) {
             $this->logger->error(__FILE__, __LINE__, 'onNotification:: Order Id not found');
+
             return new WP_REST_Response([
                 'status' => 'KO',
-                'message' => 'Bad Request'
+                'message' => 'Bad Request',
             ], 400);
         }
 
@@ -275,9 +290,10 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
 
         if (empty($status) || !in_array(sanitize_text_field($status), Status::getAllowedStatus())) {
             $this->logger->error(__FILE__, __LINE__, 'onNotification:: Invalide status ' . $status);
+
             return new WP_REST_Response([
                 'status' => 'KO',
-                'message' => 'Bad Request'
+                'message' => 'Bad Request',
             ], 400);
         }
 
@@ -288,34 +304,39 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
             Plugin::processWebhookStatus($order, sanitize_text_field($status), $merchantReferenceId);
         }
 
-        $this->logger->info(__FILE__, __LINE__,
-            'onNotification:: status ' . $status . ' updates successfully');
+        $this->logger->info(
+            __FILE__,
+            __LINE__,
+            'onNotification:: status ' . $status . ' updates successfully'
+        );
+
         return new WP_REST_Response([
             'status' => 'OK',
-            'message' => sprintf('Status Updated From %s To %s', $oldStatus, $order->get_status())
+            'message' => sprintf('Status Updated From %s To %s', $oldStatus, $order->get_status()),
         ], 200);
     }
 
-    protected function logEnkapPayment(int $orderId, string $merchantReferenceId, string $orderTransactionId)
+    public function get_icon()
+    {
+        $iconHtml = '';
+        $icon = WC_HTTPS::force_https_url(plugin_dir_url(__FILE__) . 'assets/images/e-nkap.png');
+        $iconHtml .= '<img src="' . esc_attr($icon) . '" alt="' .
+            esc_attr__('SmobilPay for e-commerce acceptance mark', Plugin::DOMAIN_TEXT) . '" />';
+
+        return apply_filters('woocommerce_gateway_icon', $iconHtml, $this->id);
+    }
+
+    protected function logEnkapPayment(int $orderId, string $merchantReferenceId, string $orderTransactionId): void
     {
         global $wpdb;
 
         $wpdb->insert(
-            $wpdb->prefix . "wc_enkap_payments",
+            $wpdb->prefix . 'wc_enkap_payments',
             [
                 'wc_order_id' => absint(wp_unslash($orderId)),
                 'order_transaction_id' => sanitize_text_field($orderTransactionId),
                 'merchant_reference_id' => sanitize_text_field($merchantReferenceId),
             ]
         );
-    }
-
-    public function get_icon()
-    {
-        $icon_html = '';
-        $icon = WC_HTTPS::force_https_url(plugin_dir_url(__FILE__) . 'assets/images/e-nkap.png');
-        $icon_html .= '<img src="' . esc_attr($icon) . '" alt="' .
-            esc_attr__('SmobilPay for e-commerce acceptance mark', Plugin::DOMAIN_TEXT) . '" />';
-        return apply_filters('woocommerce_gateway_icon', $icon_html, $this->id);
     }
 }
