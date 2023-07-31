@@ -6,14 +6,15 @@ use WC_Logger;
 
 defined('ABSPATH') || exit; // Exit if accessed directly
 
-if (!class_exists(Logger::class)):
-
+if (!class_exists(Logger::class)) {
     class Logger
     {
         private $id;
+
         /** @var bool $enabled */
         private $enabled;
-        /** @var null|WC_Logger  */
+
+        /** @var WC_Logger|null */
         private $logger;
 
         public function __construct($id, $enabled = false)
@@ -45,9 +46,11 @@ if (!class_exists(Logger::class)):
                 return;
             }
 
-            $this->logger->log($level,
+            $this->logger->log(
+                $level,
                 $this->getMessage(sanitize_text_field($file), absint($line), sanitize_textarea_field($message)),
-                ['source' => $this->id]);
+                ['source' => $this->id]
+            );
         }
 
         public function debug($file, $line, $message)
@@ -95,5 +98,4 @@ if (!class_exists(Logger::class)):
             return sprintf('[%s:%s] %s', basename($file), $line, $message);
         }
     }
-
-endif;
+}
