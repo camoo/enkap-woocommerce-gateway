@@ -16,7 +16,7 @@ use WP_REST_Server;
 
 defined('ABSPATH') || exit;
 
-class Gateway extends WC_Payment_Gateway
+class WC_Enkap_Gateway extends WC_Payment_Gateway
 {
     private $_key;
 
