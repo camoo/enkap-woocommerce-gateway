@@ -18,7 +18,7 @@ defined('ABSPATH') || exit;
 if (!class_exists(Plugin::class)) {
     class Plugin
     {
-        public const WP_WC_ENKAP_DB_VERSION = '1.0.5';
+        public const WP_WC_ENKAP_DB_VERSION = '1.0.6';
 
         public const DOMAIN_TEXT = 'wc-wp-enkap';
 

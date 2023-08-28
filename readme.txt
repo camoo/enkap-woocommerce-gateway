@@ -4,7 +4,7 @@ Tags: Gateway, Mobile Money, Orange Money, Payment Aggregator, WooCommerce, e-Co
 Requires at least: 4.8
 Tested up to: 6.2.2
 Requires PHP: 7.3
-Stable tag: 1.0.5
+Stable tag: 1.0.6
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -91,6 +91,10 @@ More details can be found on the [documentation website](https://support.enkap.c
 N/A
 
 == Changelog ==
+
+= 1.0.6: 28 Aug, 2023 =
+* Hot Fix: Calling wrong class name
+
 = 1.0.5: July 30, 2023 =
 * Tweak: Security updates
 

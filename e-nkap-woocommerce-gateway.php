@@ -41,6 +41,6 @@ require_once __DIR__ . '/includes/admin/PluginAdmin.php';
         'https://github.com/camoo/enkap-woocommerce-gateway',
         __('Do you like our plugin and can recommend to others.', Plugin::DOMAIN_TEXT)
     ),
-    '1.0.4'
+    '1.0.6'
 )
 )->register();
