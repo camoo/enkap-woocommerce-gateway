@@ -2,9 +2,9 @@
 Contributors: camoo, maviance
 Tags: Gateway, Mobile Money, Orange Money, Payment Aggregator, WooCommerce, e-Commerce, Cameroon, Cameroun, MTN, Orange, payment platform, momo, OM, YUP,
 Requires at least: 4.8
-Tested up to: 6.2.2
+Tested up to: 6.4.1
 Requires PHP: 7.3
-Stable tag: 1.0.6
+Stable tag: 1.0.7
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -91,6 +91,10 @@ More details can be found on the [documentation website](https://support.enkap.c
 N/A
 
 == Changelog ==
+
+= 1.0.7: 12 Nov, 2023 =
+* Tweak: code readability improved
+* Tweak: Tested up to 6.4.1
 
 = 1.0.6: 28 Aug, 2023 =
 * Hot Fix: Calling wrong class name
