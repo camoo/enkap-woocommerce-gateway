@@ -10,7 +10,7 @@
     "homepage": "https://camoo.cm",
     "license": "GPL-2.0-or-later",
     "prefer-stable" : true,
-    "version": "1.0.7",
+    "version": "1.0.9",
     "authors": [
         {
             "name": "CAMOO SARL",

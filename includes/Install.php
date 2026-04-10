@@ -21,13 +21,14 @@ class Install
      *
      * @param $network_wide
      */
-    public static function install($network_wide)
+    public static function install($network_wide): void
     {
         self::create_table($network_wide);
 
-        if (is_admin()) {
-            self::upgrade();
+        if (!is_admin()) {
+            return;
         }
+        self::upgrade();
     }
 
     /**
@@ -35,7 +36,7 @@ class Install
      *
      * @param $blogId
      */
-    public function add_table_on_create_blog($blogId)
+    public function add_table_on_create_blog($blogId): void
     {
         if (!is_plugin_active_for_network(self::PLUGIN_MAIN_FILE)) {
             return;
@@ -73,7 +74,7 @@ class Install
         }
     }
 
-    protected static function create_table($network_wide)
+    protected static function create_table($network_wide): void
     {
         global $wpdb;
 
@@ -91,7 +92,7 @@ class Install
         }
     }
 
-    protected static function table_sql()
+    protected static function table_sql(): void
     {
         global $wpdb;
         require_once ABSPATH . 'wp-admin/includes/upgrade.php';

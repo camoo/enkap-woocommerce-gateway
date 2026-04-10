@@ -18,7 +18,7 @@ defined('ABSPATH') || exit;
 if (!class_exists(Plugin::class)) {
     class Plugin
     {
-        public const WP_WC_ENKAP_DB_VERSION = '1.0.7';
+        public const WP_WC_ENKAP_DB_VERSION = '1.0.9';
 
         public const DOMAIN_TEXT = 'wc-wp-enkap';
 
@@ -86,6 +86,31 @@ if (!class_exists(Plugin::class)) {
             );
             add_action('plugins_loaded', [$this, 'onInit']);
             add_action('wp_enqueue_scripts', [__CLASS__, 'enqueue_block_enkap_css_scripts']);
+            add_action(
+                'woocommerce_blocks_payment_method_type_registration',
+                function ($registry) {
+                    require_once __DIR__ . '/EnkapBlocksSupport.php';
+                    $registry->register(new \Camoo\Enkap\WooCommerce\EnkapBlocksSupport());
+                }
+            );
+            add_action(
+                'woocommerce_rest_checkout_process_payment_with_context',
+                function ($context, $result) {
+                    if (($context->payment_method ?? '') !== Plugin::WC_ENKAP_GATEWAY_ID) {
+                        return;
+                    }
+
+                    $gateway = new \Camoo\Enkap\WooCommerce\WC_Enkap_Gateway();
+
+                    $response = $gateway->process_payment($context->order->get_id());
+
+                    if (!empty($response['redirect'])) {
+                        $result->set_redirect_url($response['redirect']);
+                    }
+                },
+                10,
+                2
+            );
 
             register_deactivation_hook($this->pluginPath, [$this, 'route_status_plugin_deactivate']);
             if (is_admin()) {
