@@ -2,9 +2,10 @@
 Contributors: camoo, maviance
 Tags: Gateway, Mobile Money, Orange Money, Payment Aggregator, WooCommerce, e-Commerce, Cameroon, Cameroun, MTN, Orange, payment platform, momo, OM, YUP,
 Requires at least: 4.8
-Tested up to: 6.4.1
+Requires Plugins: woocommerce
+Tested up to: 6.9
 Requires PHP: 7.3
-Stable tag: 1.0.7
+Stable tag: 1.0.9
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -17,7 +18,7 @@ A secure and seamless plugin to receive and manage Cash, Mobile, and Card paymen
 Smobilpay for e-commerce is an online payment service aggregator that allows web users and e-Commerce merchants to buy and sell on the Internet using international and all existing local payment methods in Cameroon.
 We enable digital organizations to accept cash, Mobile Money, or card payment via a simple, unique API permitting local businesses to participate in the vast digital economy by transforming their service offerings into the world of e-commerce sites.
 
-This fully functional plugin has been developed for WooCommerce, to help merchants diminish payment friction for their customers by meeting customers where they spend more and more time – online!
+This fully functional plugin has been developed for WooCommerce to help merchants diminish payment friction for their customers by meeting customers where they spend more and more time online!
 
 It works in both Sandbox (development mode) and Live (production mode)
 
@@ -27,7 +28,7 @@ Customers are more likely to finalize a purchase on a site that has their prefer
 
 = What is Smobilpay? =
 A digital one-stop-shop, providing cashless payment solutions for Government, Corporations and businesses, and also providing a seamless Digital payment solution, used by third-party agents to sell digital services to end consumers.
-The smobilpay platform Boasts of being a major partner with giant service providers in Cameroon such as ENEO (Prepaid and Postpaid), CamWater, MTN, Orange, Yoomee, Canal+, and more. Its reliability, invulnerable security, and efficiency are evident enough via its partnership with GIMAC-the interoperability switch of BEAC (the Bank Of Central African States), where smobilpay serves as the lone digital service aggregator for the entire CEMAC(Central African Economic and Monetary Community) region.
+The smobilpay platform Boasts of being a major partner with giant service providers in Cameroon such as ENEO (Prepaid and Postpaid), CamWater, MTN, Orange, Yoomee, Canal+, and more. Its reliability, invulnerable security, and efficiency are clear enough via its partnership with GIMAC-the interoperability switch of BEAC (the Bank Of Central African States), where smobilpay serves as the lone digital service aggregator for the entire CEMAC(Central African Economic and Monetary Community) region.
 
 = Features =
 * Pay with Cameroon MTN Mobile Money
@@ -49,20 +50,20 @@ The SmobilPay for e-commerce gateway is compatible with PHP version 8.0. We stro
 = How to get my access keys? =
 All you need is just to [create an account](https://enkap.cm/) and then ask our team for consumer key pairs.
 
-= Can I receive cash payment ? =
-Yes! you can receive SmobilPay cash, if your buyer has an account with Smobilpay.
+= Can I receive a cash payment? =
+Yes! You can receive SmobilPay cash if your buyer has an account with Smobilpay.
 
 = What is the cost for the gateway plugin? =
 This plugin is a FREE download.
 
 == Installation ==
 = Installation =
-1. In your WordPress Dashboard go to "Plugins" -> "Add Plugin".
-2. Search for "SmobilPay".
+1. In your WordPress Dashboard, go to "Plugins" -> "Add Plugin."
+2. Search for "SmobilPay."
 3. Install the plugin by pressing the "Install" button.
 4. Activate the plugin by pressing the "Activate" button.
 5. Open the settings page for WooCommerce and click the "Payments" tab.
-6. Click on the line for "SmobilPay for e-commerce Payment".
+6. Click on the line for "SmobilPay for e-commerce Payment."
 7. Configure your SmobilPay for e-commerce Gateway settings.
 
 More details can be found on the [documentation website](https://support.enkap.cm)
@@ -91,6 +92,11 @@ More details can be found on the [documentation website](https://support.enkap.c
 N/A
 
 == Changelog ==
+
+= 1.0.8: 06 Apr, 2024 =
+* Tweak: tag requires plugins added
+* Tweak: code readability improved
+* Tweak: Tested up to 6.5
 
 = 1.0.7: 12 Nov, 2023 =
 * Tweak: code readability improved

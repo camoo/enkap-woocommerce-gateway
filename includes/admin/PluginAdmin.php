@@ -8,6 +8,7 @@
 
 namespace Camoo\Enkap\WooCommerce\Admin;
 
+use Automattic\WooCommerce\Internal\DataStores\Orders\CustomOrdersTableController;
 use Camoo\Enkap\WooCommerce\Plugin;
 use Enkap\OAuth\Lib\Helper;
 use Enkap\OAuth\Services\StatusService;
@@ -53,8 +54,16 @@ if (!class_exists(PluginAdmin::class)) {
 
             $this->isRegistered = true;
 
-            add_filter('manage_edit-shop_order_columns', [__CLASS__, 'extend_order_view'], 10);
-            add_action('manage_shop_order_posts_custom_column', [__CLASS__, 'get_extended_order_value'], 2);
+
+            if (class_exists(CustomOrdersTableController::class)) {
+                // HPOS
+                add_filter('woocommerce_shop_order_list_table_columns', [__CLASS__, 'extend_order_view'], 10);
+                add_action('woocommerce_shop_order_list_table_custom_column', [__CLASS__, 'get_extended_order_value'], 10, 2);
+            } else {
+                add_filter('manage_edit-shop_order_columns', [__CLASS__, 'extend_order_view'], 10);
+                add_action('manage_shop_order_posts_custom_column', [__CLASS__, 'get_extended_order_value'], 2);
+            }
+
             add_filter('woocommerce_admin_order_actions', [__CLASS__, 'add_custom_order_status_actions_button'], 100, 2);
             add_action('wp_ajax_e_nkap_mark_order_status', [__CLASS__, 'checkRemotePaymentStatus']);
             add_action('admin_enqueue_scripts', [__CLASS__, 'enqueue_admin_enkap_css_scripts']);
@@ -164,10 +173,9 @@ if (!class_exists(PluginAdmin::class)) {
             return $new_columns;
         }
 
-        public static function get_extended_order_value($column)
+        public static function get_extended_order_value($column, $order)
         {
-            global $post;
-            $orderId = $post->ID;
+            $orderId = $order->get_id();
 
             if ($column === 'merchant_reference_id') {
                 $paymentData = self::getPaymentByWcOrderId($orderId);

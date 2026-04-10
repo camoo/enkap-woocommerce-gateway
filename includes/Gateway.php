@@ -38,7 +38,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
     {
         $this->id = Plugin::WC_ENKAP_GATEWAY_ID;
         $this->icon = null;
-        $this->has_fields = true;
+        $this->has_fields = false;
 
         $this->init_form_fields();
         $this->init_settings();
@@ -146,17 +146,6 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
         $this->form_fields = apply_filters('wc_enkap_settings', $wc_enkap_settings);
     }
 
-    public function validate_fields()
-    {
-        if (empty($_POST['billing_first_name'])) {
-            wc_add_notice('First name is required!', 'error');
-
-            return false;
-        }
-
-        return true;
-    }
-
     public function process_admin_options()
     {
         parent::process_admin_options();
@@ -187,6 +176,16 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
     {
         try {
             $wcOrder = $this->getWcOrder($order_id);
+
+            if (
+                empty($wcOrder->get_billing_first_name()) ||
+                empty($wcOrder->get_billing_last_name())
+            ) {
+                wc_add_notice('First name is required!', 'error');
+
+                return [];
+            }
+
             $orderService = $this->createOrderService();
             $merchantReferenceId = wp_generate_uuid4();
             $orderData = $this->prepareOrderData($wcOrder, $merchantReferenceId);
@@ -337,8 +336,10 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
         $order_data = $wcOrder->get_data();
         $orderData = [
             'merchantReference' => $merchantReferenceId,
-            'email' => $order_data['billing']['email'],
-            'customerName' => $order_data['billing']['first_name'] . ' ' . $order_data['billing']['last_name'],
+            'email' => sanitize_email($order_data['billing']['email']),
+            'customerName' => sanitize_text_field(
+                $order_data['billing']['first_name'] . ' ' . $order_data['billing']['last_name']
+            ),
             'totalAmount' => (float)$order_data['total'],
             'description' => __('Payment from', Plugin::DOMAIN_TEXT) . ' ' . get_bloginfo('name'),
             'currency' => sanitize_text_field($this->get_option('enkap_currency')),
