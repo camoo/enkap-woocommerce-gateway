@@ -45,7 +45,7 @@ Yes! We have installation documentation.
 To test the plugin, create a smobilpay for the e-commerce sandbox account and configure the plugin.
 
 = Does it support PHP8? =
-The SmobilPay for e-commerce gateway is compatible with PHP version 8.0. We strongly recommend at least the use of PHP 7.3 to enjoy all the features offered.
+The SmobilPay for e-commerce gateway is compatible with PHP version 8.5. We strongly recommend at least the use of PHP 8.2 to enjoy all the features offered.
 
 = How to get my access keys? =
 All you need is just to [create an account](https://enkap.cm/) and then ask our team for consumer key pairs.
@@ -92,6 +92,11 @@ More details can be found on the [documentation website](https://support.enkap.c
 N/A
 
 == Changelog ==
+
+= 1.0.9: 10 Apr, 2026 =
+* Tweak: HPOS (High-Performance Order Storage) compatibility added
+* Tweak: Tested up to 6.9
+* Fix: minor code improvements
 
 = 1.0.8: 06 Apr, 2024 =
 * Tweak: tag requires plugins added
