@@ -255,7 +255,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
         $paymentStatus = PaymentStatus::tryFrom($normalizedStatus);
 
         if (empty($paymentStatus)) {
-            $this->logger->error(__FILE__, __LINE__, 'onNotification:: Invalide status ' . $status);
+            $this->logger->error(__FILE__, __LINE__, 'onNotification:: Invalid status ' . $status);
 
             return new WP_REST_Response([
                 'status' => 'KO',

@@ -130,7 +130,7 @@ if (!class_exists(PluginAdmin::class)) {
                                 __('Payment status successfully updated.', Plugin::DOMAIN_TEXT),
                                 30
                             );
-                        }catch (Throwable $exception) {
+                        } catch (Throwable $exception) {
                             set_transient(
                                 'enkap_admin_error_' . get_current_user_id(),
                                 wp_strip_all_tags($exception->getMessage()),
