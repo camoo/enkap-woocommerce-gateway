@@ -218,7 +218,7 @@ if (!class_exists(Plugin::class)) {
             load_plugin_textdomain(
                 self::DOMAIN_TEXT,
                 false,
-                dirname(plugin_basename(__FILE__)) . '/languages'
+                dirname(plugin_basename(__FILE__), 2) . '/languages'
             );
         }
 
@@ -241,7 +241,6 @@ if (!class_exists(Plugin::class)) {
                     ],
                 ]
             );
-            flush_rewrite_rules();
         }
 
         public function notification_route()
@@ -255,7 +254,6 @@ if (!class_exists(Plugin::class)) {
                     'permission_callback' => '__return_true',
                 ]
             );
-            flush_rewrite_rules();
         }
 
         public static function processWebhookStatus($order, PaymentStatus $status, string $merchantReferenceId): void

@@ -213,7 +213,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
 
         if (empty($orderId)) {
             $this->logger->error(__FILE__, __LINE__, 'OnReturn:: Order Id not found');
-            wp_redirect(get_permalink(wc_get_page_id('shop')));
+            wp_safe_redirect(get_permalink(wc_get_page_id('shop')));
             Helper::exitOrDie();
         }
         $status = filter_input(INPUT_GET, 'status');
@@ -227,7 +227,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
         $shopPageUrl = isset($order) ? $order->get_checkout_order_received_url() :
             get_permalink(wc_get_page_id('shop'));
 
-        if (wp_redirect($shopPageUrl)) {
+        if (wp_safe_redirect($shopPageUrl)) {
             Helper::exitOrDie();
         }
     }

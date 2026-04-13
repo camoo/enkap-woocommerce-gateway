@@ -14,8 +14,41 @@ defined('WP_UNINSTALL_PLUGIN') || exit;
 
 global $wpdb;
 
-delete_option('wp_wc_enkap_db_version');
+/**
+ * Delete plugin data for a single site
+ */
+function enkap_delete_site_data(): void {
+    global $wpdb;
 
-$wpdb->query("DELETE FROM $wpdb->options WHERE `option_name` LIKE 'woocommerce_e_nkap%';");
+    delete_option('wp_wc_enkap_db_version');
 
-$wpdb->query("DROP TABLE IF EXISTS {$wpdb->prefix}wc_enkap_payments");
+    // Delete WooCommerce settings safely
+    $options = $wpdb->get_col(
+        $wpdb->prepare(
+            "SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s",
+            'woocommerce_e_nkap%'
+        )
+    );
+
+    foreach ($options as $option) {
+        delete_option($option);
+    }
+
+    // Drop table
+    $wpdb->query("DROP TABLE IF EXISTS {$wpdb->prefix}wc_enkap_payments");
+}
+
+/**
+ * Multisite support
+ */
+if (is_multisite()) {
+    $blog_ids = $wpdb->get_col("SELECT blog_id FROM {$wpdb->blogs}");
+
+    foreach ($blog_ids as $blog_id) {
+        switch_to_blog((int)$blog_id);
+        enkap_delete_site_data();
+        restore_current_blog();
+    }
+} else {
+    enkap_delete_site_data();
+}

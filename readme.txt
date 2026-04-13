@@ -1,6 +1,6 @@
 === SmobilPay for e-commerce - Mobile Money Gateway for WooCommerce ===
 Contributors: camoo, maviance
-Tags: Gateway, Mobile Money, Orange Money, Payment Aggregator, WooCommerce, e-Commerce, Cameroon, Cameroun, MTN, Orange, payment platform, momo, OM, YUP,
+Tags: Mobile Money, Orange Money, MTN Mobile Money, Express Union Mobile Money, Cameroon
 Requires at least: 6.7
 Requires Plugins: woocommerce
 Tested up to: 6.9
