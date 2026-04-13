@@ -3,14 +3,14 @@
     "description": "Enkap - Mobile Money Gateway for WooCommerce",
     "type": "wordpress-plugin",
     "require": {
-        "php": ">=7.3",
-        "camoo/enkap-oauth": "^1.0"
+        "php": ">=8.2",
+        "camoo/enkap-oauth": "^2.0"
     },
     "minimum-stability": "dev",
     "homepage": "https://camoo.cm",
     "license": "GPL-2.0-or-later",
     "prefer-stable" : true,
-    "version": "1.0.9",
+    "version": "1.1.0",
     "authors": [
         {
             "name": "CAMOO SARL",

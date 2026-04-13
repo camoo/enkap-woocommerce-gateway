@@ -2,10 +2,10 @@
 
 namespace Camoo\Enkap\WooCommerce;
 
+use Enkap\OAuth\Enum\PaymentStatus;
 use Enkap\OAuth\Lib\Helper;
 use Enkap\OAuth\Model\CallbackUrl;
 use Enkap\OAuth\Model\Order;
-use Enkap\OAuth\Model\Status;
 use Enkap\OAuth\Services\CallbackUrlService;
 use Enkap\OAuth\Services\OrderService;
 use Exception;
@@ -152,7 +152,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
 
         $this->consumerKey = sanitize_text_field($this->get_option('enkap_key'));
         $this->consumerSecret = sanitize_text_field($this->get_option('enkap_secret'));
-        $setup = new CallbackUrlService($this->consumerKey, $this->consumerSecret, [], $this->testMode);
+        $setup = new CallbackUrlService($this->consumerKey, $this->consumerSecret, $this->testMode);
         /** @var CallbackUrl $callBack */
         $callBack = $setup->loadModel(CallbackUrl::class);
         $callBack->return_url = Plugin::get_webhook_url('return');
@@ -217,9 +217,11 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
             Helper::exitOrDie();
         }
         $status = filter_input(INPUT_GET, 'status');
+        $normalizedStatus = wc_clean($status);
+        $paymentStatus = PaymentStatus::tryFrom($normalizedStatus);
 
-        if ($status && ($order = wc_get_order($orderId))) {
-            Plugin::processWebhookStatus($order, sanitize_text_field($status), $merchantReferenceId);
+        if ($paymentStatus && ($order = wc_get_order($orderId))) {
+            Plugin::processWebhookStatus($order, $paymentStatus, $merchantReferenceId);
         }
 
         $shopPageUrl = isset($order) ? $order->get_checkout_order_received_url() :
@@ -249,8 +251,10 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
         $bodyData = json_decode($requestBody, true);
 
         $status = $bodyData['status'];
+        $normalizedStatus = wc_clean($status);
+        $paymentStatus = PaymentStatus::tryFrom($normalizedStatus);
 
-        if (empty($status) || !in_array(sanitize_text_field($status), Status::getAllowedStatus())) {
+        if (empty($paymentStatus)) {
             $this->logger->error(__FILE__, __LINE__, 'onNotification:: Invalide status ' . $status);
 
             return new WP_REST_Response([
@@ -263,7 +267,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
         $oldStatus = '';
         if ($order) {
             $oldStatus = $order->get_status();
-            Plugin::processWebhookStatus($order, sanitize_text_field($status), $merchantReferenceId);
+            Plugin::processWebhookStatus($order, $paymentStatus, $merchantReferenceId);
         }
 
         $this->logger->info(
@@ -314,7 +318,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
 
     private function createOrderService(): OrderService
     {
-        return new OrderService($this->consumerKey, $this->consumerSecret, [], $this->testMode);
+        return new OrderService($this->consumerKey, $this->consumerSecret, $this->testMode);
     }
 
     /**
