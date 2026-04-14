@@ -1,11 +1,11 @@
 === SmobilPay for e-commerce - Mobile Money Gateway for WooCommerce ===
 Contributors: camoo, maviance
-Tags: Gateway, Mobile Money, Orange Money, Payment Aggregator, WooCommerce, e-Commerce, Cameroon, Cameroun, MTN, Orange, payment platform, momo, OM, YUP,
-Requires at least: 4.8
+Tags: Mobile Money, Orange Money, MTN Mobile Money, Express Union Mobile Money, Cameroon
+Requires at least: 6.7
 Requires Plugins: woocommerce
 Tested up to: 6.9
-Requires PHP: 7.3
-Stable tag: 1.0.9
+Requires PHP: 8.2
+Stable tag: 1.1.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,14 +69,14 @@ This plugin is a FREE download.
 More details can be found on the [documentation website](https://support.enkap.cm)
 
 = Minimum Requirements =
-* WordPress version 4.7 or greater.
-* PHP version 7.2 or greater.
+* WordPress version 6.7 or greater.
+* PHP version 8.2 or greater.
 * MySQL version 5.0 or greater.
 
 = Recommended Requirements =
 * The Latest WordPress version.
-* PHP version 7.3 or greater.
-* MySQL version 5.7 or greater.
+* PHP version 8.3 or greater.
+* MySQL version 8.0 or greater.
 
 == Upgrade Notice ==
 
@@ -92,6 +92,10 @@ More details can be found on the [documentation website](https://support.enkap.c
 N/A
 
 == Changelog ==
+
+= 1.1.0: 13 Apr, 2026 =
+* Fix: support for new enkap API improvements
+* Tweak: code readability improved
 
 = 1.0.9: 10 Apr, 2026 =
 * Tweak: HPOS (High-Performance Order Storage) compatibility added

@@ -5,7 +5,7 @@
  * Requires Plugins: woocommerce
  * Plugin URI: https://enkap.cm/
  * Description: Receive Mobile Money payments on your store using SmobilPay for e-commerce.
- * Version: 1.0.9
+ * Version: 1.1.0
  * Tested up to: 6.9
  * WC requires at least: 3.2
  * WC tested up to: 8.9.1
@@ -15,8 +15,8 @@
  * Developer URI: http://www.camoo.cm/
  * Text Domain: wc-wp-enkap
  * Domain Path: /languages
- * Requires at least: 4.8
- * Requires PHP: 7.3
+ * Requires at least: 6.7
+ * Requires PHP: 8.2
  * License: GPLv2 or later
  * License URI: http://www.gnu.org/licenses/gpl-2.0.html
  *
@@ -49,13 +49,6 @@ add_action('before_woocommerce_init', function () {
     __FILE__,
     'WC_Enkap_Gateway',
     'Gateway',
-    sprintf(
-        '%s<br/><a href="%s" target="_blank">%s</a><br/><a href="%s" target="_blank">%s</a>',
-        __('SmobilPay for e-commerce payment gateway', Plugin::DOMAIN_TEXT),
-        'https://enkap.cm/#comptenkap',
-        __('Do you have any questions or requests?', Plugin::DOMAIN_TEXT),
-        'https://github.com/camoo/enkap-woocommerce-gateway',
-        __('Do you like our plugin and can recommend to others.', Plugin::DOMAIN_TEXT)
-    ),
-    '1.0.9'
+    'SmobilPay for e-commerce payment gateway',
+    '1.1.0'
 ))->register();

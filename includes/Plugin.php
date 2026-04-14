@@ -8,7 +8,7 @@
 namespace Camoo\Enkap\WooCommerce;
 
 use Camoo\Enkap\WooCommerce\Admin\PluginAdmin;
-use Enkap\OAuth\Model\Status;
+use Enkap\OAuth\Enum\PaymentStatus;
 use WC_Geolocation;
 use WC_Order;
 use WC_Order_Refund;
@@ -18,7 +18,7 @@ defined('ABSPATH') || exit;
 if (!class_exists(Plugin::class)) {
     class Plugin
     {
-        public const WP_WC_ENKAP_DB_VERSION = '1.0.9';
+        public const WP_WC_ENKAP_DB_VERSION = '1.1.0';
 
         public const DOMAIN_TEXT = 'wc-wp-enkap';
 
@@ -44,8 +44,6 @@ if (!class_exists(Plugin::class)) {
 
         protected $version;
 
-        protected $image_format = 'full';
-
         public function __construct($pluginPath, $adapterName, $adapterFile, $description = '', $version = null)
         {
             $this->id = basename($pluginPath, '.php');
@@ -64,7 +62,7 @@ if (!class_exists(Plugin::class)) {
             ];
 
             $this->mainMenuId = 'admin.php';
-            $this->title = __('SmobilPay for e-commerce - Payment Gateway for WooCommerce', self::DOMAIN_TEXT);
+            $this->title = 'SmobilPay for e-commerce - Payment Gateway for WooCommerce';
         }
 
         public function register()
@@ -158,7 +156,7 @@ if (!class_exists(Plugin::class)) {
             return $links;
         }
 
-        public function loadGatewayClass()
+        public function loadGatewayClass(): void
         {
             if (class_exists('\\Camoo\\Enkap\\WooCommerce\\' . $this->adapterName)) {
                 return;
@@ -220,7 +218,7 @@ if (!class_exists(Plugin::class)) {
             load_plugin_textdomain(
                 self::DOMAIN_TEXT,
                 false,
-                dirname(plugin_basename(__FILE__)) . '/languages'
+                dirname(plugin_basename(__FILE__), 2) . '/languages'
             );
         }
 
@@ -237,13 +235,12 @@ if (!class_exists(Plugin::class)) {
                         'status' => [
                             'required' => true,
                             'validate_callback' => function ($param) {
-                                return in_array($param, Status::getAllowedStatus());
+                                return in_array($param, PaymentStatus::getAllStatuses());
                             },
                         ],
                     ],
                 ]
             );
-            flush_rewrite_rules();
         }
 
         public function notification_route()
@@ -257,77 +254,69 @@ if (!class_exists(Plugin::class)) {
                     'permission_callback' => '__return_true',
                 ]
             );
-            flush_rewrite_rules();
         }
 
-        public static function processWebhookStatus($order, string $status, string $merchantReferenceId)
+        public static function processWebhookStatus($order, PaymentStatus $status, string $merchantReferenceId): void
         {
-            switch (sanitize_text_field($status)) {
-                case Status::IN_PROGRESS_STATUS:
-                case Status::CREATED_STATUS:
-                case Status::INITIALISED_STATUS:
-                    self::processWebhookProgress($order, $merchantReferenceId, $status);
-                    break;
-                case Status::CONFIRMED_STATUS:
-                    self::processWebhookConfirmed($order, $merchantReferenceId);
-                    break;
-                case Status::CANCELED_STATUS:
-                    self::processWebhookCanceled($order, $merchantReferenceId);
-                    break;
-                case Status::FAILED_STATUS:
-                    self::processWebhookFailed($order, $merchantReferenceId);
-                    break;
-                default:
-                    break;
-            }
+            match ($status) {
+                PaymentStatus::IN_PROGRESS_STATUS,
+                PaymentStatus::CREATED_STATUS,
+                PaymentStatus::INITIALISED_STATUS
+                => self::processWebhookProgress($order, $merchantReferenceId, $status),
+                PaymentStatus::CONFIRMED_STATUS => self::processWebhookConfirmed($order, $merchantReferenceId),
+                PaymentStatus::CANCELED_STATUS => self::processWebhookCanceled($order, $merchantReferenceId),
+                PaymentStatus::FAILED_STATUS => self::processWebhookFailed($order, $merchantReferenceId),
+
+                default => null,
+            };
         }
 
         /** @param bool|WC_Order|WC_Order_Refund $order */
-        private static function processWebhookConfirmed($order, string $merchantReferenceId)
+        private static function processWebhookConfirmed($order, string $merchantReferenceId): void
         {
             $order->update_status('completed');
             wc_reduce_stock_levels($order->get_id());
-            self::applyStatusChange(Status::CONFIRMED_STATUS, $merchantReferenceId);
+            self::applyStatusChange(PaymentStatus::CONFIRMED_STATUS, $merchantReferenceId);
             $order->add_order_note(__('SmobilPay payment completed', Plugin::DOMAIN_TEXT), true);
         }
 
         /** @param bool|WC_Order|WC_Order_Refund $order */
-        private static function processWebhookProgress($order, string $merchantReferenceId, string $realStatus)
+        private static function processWebhookProgress($order, string $merchantReferenceId, PaymentStatus $status): void
         {
             $currentStatus = $order->get_status();
             if ($currentStatus === 'completed') {
                 return;
             }
             $order->update_status('pending');
-            self::applyStatusChange($realStatus, $merchantReferenceId);
+            self::applyStatusChange($status, $merchantReferenceId);
             do_action('woocommerce_order_edit_status', $order->get_id(), 'pending');
         }
 
         /** @param bool|WC_Order|WC_Order_Refund $order */
-        private static function processWebhookCanceled($order, string $merchantReferenceId)
+        private static function processWebhookCanceled($order, string $merchantReferenceId): void
         {
             $order->update_status('cancelled');
-            self::applyStatusChange(Status::CANCELED_STATUS, $merchantReferenceId);
+            self::applyStatusChange(PaymentStatus::CANCELED_STATUS, $merchantReferenceId);
             $order->add_order_note(__('SmobilPay payment cancelled', Plugin::DOMAIN_TEXT), true);
             do_action('woocommerce_order_edit_status', $order->get_id(), 'cancelled');
         }
 
         /** @param bool|WC_Order|WC_Order_Refund $order */
-        private static function processWebhookFailed($order, string $merchantReferenceId)
+        private static function processWebhookFailed($order, string $merchantReferenceId): void
         {
             $order->update_status('failed');
-            self::applyStatusChange(Status::FAILED_STATUS, $merchantReferenceId);
+            self::applyStatusChange(PaymentStatus::FAILED_STATUS, $merchantReferenceId);
             $order->add_order_note(__('SmobilPay payment failed', Plugin::DOMAIN_TEXT), true);
             do_action('woocommerce_order_edit_status', $order->get_id(), 'failed');
         }
 
-        private static function applyStatusChange(string $status, string $merchantReferenceId)
+        private static function applyStatusChange(PaymentStatus $status, string $merchantReferenceId): void
         {
             global $wpdb;
             $remoteIp = WC_Geolocation::get_ip_address();
             $setData = [
                 'status_date' => current_time('mysql'),
-                'status' => sanitize_title($status),
+                'status' => sanitize_title($status->value),
             ];
             if ($remoteIp) {
                 $setData['remote_ip'] = sanitize_text_field($remoteIp);

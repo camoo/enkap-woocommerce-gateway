@@ -29,6 +29,7 @@ class Install
             return;
         }
         self::upgrade();
+        flush_rewrite_rules();
     }
 
     /**
@@ -38,12 +39,13 @@ class Install
      */
     public function add_table_on_create_blog($blogId): void
     {
+        require_once ABSPATH . 'wp-admin/includes/plugin.php';
+
         if (!is_plugin_active_for_network(self::PLUGIN_MAIN_FILE)) {
             return;
         }
 
         switch_to_blog($blogId);
-
         self::table_sql();
         restore_current_blog();
     }
@@ -70,7 +72,7 @@ class Install
         $installedVersion = get_option('wp_wc_enkap_db_version');
 
         if ($installedVersion !== Plugin::WP_WC_ENKAP_DB_VERSION) {
-            update_option('wp_wc_enkap_db_version', Plugin::WP_WC_ENKAP_DB_VERSION);
+            self::table_sql();
         }
     }
 
@@ -95,24 +97,30 @@ class Install
     protected static function table_sql(): void
     {
         global $wpdb;
+
         require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
         $table_name = $wpdb->prefix . 'wc_enkap_payments';
-        if ($wpdb->get_var("show tables like '$table_name'") !== $table_name) {
-            $create_enkap_payments = ("CREATE TABLE IF NOT EXISTS $table_name(
-            id int(10) NOT NULL auto_increment,
-            wc_order_id bigint unsigned NOT NULL,
-            merchant_reference_id varchar(128) NOT NULL DEFAULT '',
-            order_transaction_id varchar(128) NOT NULL DEFAULT '',
-            status                varchar(50)            DEFAULT NULL,
-            status_date           datetime      NOT NULL DEFAULT '2021-05-20 00:00:00',
-            created_at            timestamp     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            updated_at            timestamp     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            remote_ip             varbinary(64) NOT NULL DEFAULT '0.0.0.0',
-            PRIMARY KEY(ID)) CHARSET=utf8");
-            add_option('wp_wc_enkap_db_version', Plugin::WP_WC_ENKAP_DB_VERSION);
-            dbDelta($create_enkap_payments);
-        }
+        $charset_collate = $wpdb->get_charset_collate();
+
+        $sql = "CREATE TABLE $table_name (
+        id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+        wc_order_id BIGINT UNSIGNED NOT NULL,
+        merchant_reference_id VARCHAR(128) NOT NULL DEFAULT '',
+        order_transaction_id VARCHAR(128) NOT NULL DEFAULT '',
+        status VARCHAR(50) DEFAULT NULL,
+        status_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        remote_ip VARBINARY(64) NOT NULL DEFAULT '',
+        PRIMARY KEY (id),
+        KEY wc_order_id (wc_order_id),
+        KEY merchant_reference_id (merchant_reference_id)
+    ) $charset_collate;";
+
+        dbDelta($sql);
+
+        update_option('wp_wc_enkap_db_version', Plugin::WP_WC_ENKAP_DB_VERSION);
     }
 }
 

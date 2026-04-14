@@ -12,6 +12,7 @@ use Automattic\WooCommerce\Internal\DataStores\Orders\CustomOrdersTableControlle
 use Camoo\Enkap\WooCommerce\Plugin;
 use Enkap\OAuth\Lib\Helper;
 use Enkap\OAuth\Services\StatusService;
+use Throwable;
 use WC_Order;
 use WC_Order_Refund;
 
@@ -44,7 +45,7 @@ if (!class_exists(PluginAdmin::class)) {
             return self::$instance;
         }
 
-        public function register()
+        public function register(): void
         {
             require_once ABSPATH . 'wp-admin/includes/plugin.php';
 
@@ -67,6 +68,27 @@ if (!class_exists(PluginAdmin::class)) {
             add_filter('woocommerce_admin_order_actions', [__CLASS__, 'add_custom_order_status_actions_button'], 100, 2);
             add_action('wp_ajax_e_nkap_mark_order_status', [__CLASS__, 'checkRemotePaymentStatus']);
             add_action('admin_enqueue_scripts', [__CLASS__, 'enqueue_admin_enkap_css_scripts']);
+            add_action('admin_notices', function () {
+                $userId = get_current_user_id();
+
+                // ERROR
+                $errorKey = 'enkap_admin_error_' . $userId;
+                if ($message = get_transient($errorKey)) {
+                    delete_transient($errorKey);
+                    echo '<div class="notice notice-error is-dismissible">';
+                    echo '<p>' . esc_html($message) . '</p>';
+                    echo '</div>';
+                }
+
+                // SUCCESS
+                $successKey = 'enkap_admin_success_' . $userId;
+                if ($message = get_transient($successKey)) {
+                    delete_transient($successKey);
+                    echo '<div class="notice notice-success is-dismissible">';
+                    echo '<p>' . esc_html($message) . '</p>';
+                    echo '</div>';
+                }
+            });
         }
 
         public static function enqueue_admin_enkap_css_scripts(): void
@@ -77,7 +99,7 @@ if (!class_exists(PluginAdmin::class)) {
             );
         }
 
-        public static function checkRemotePaymentStatus()
+        public static function checkRemotePaymentStatus(): void
         {
             if (current_user_can('edit_shop_orders') &&
                 check_admin_referer('woocommerce_enkap_check_status') &&
@@ -88,23 +110,43 @@ if (!class_exists(PluginAdmin::class)) {
                 if ($status === 'check' && !empty($order) && $order->has_status(['pending', 'on-hold', 'processing'])) {
                     WC()->payment_gateways();
                     $settings = get_option('woocommerce_' . Plugin::WC_ENKAP_GATEWAY_ID . '_settings');
-                    $consumerKey = sanitize_text_field($settings['enkap_key']);
-                    $consumerSecret = sanitize_text_field($settings['enkap_secret']);
-                    $testMode = sanitize_text_field($settings['test_mode']) === 'yes';
-                    $statusService = new StatusService($consumerKey, $consumerSecret, [], $testMode);
+
+                    $consumerKey = sanitize_text_field($settings['enkap_key'] ?? '');
+                    $consumerSecret = sanitize_text_field($settings['enkap_secret'] ?? '');
+                    $testMode = ($settings['test_mode'] ?? '') === 'yes';
+
+                    $statusService = new StatusService($consumerKey, $consumerSecret, $testMode);
                     $paymentData = self::getPaymentByWcOrderId($order->get_id());
                     if ($paymentData) {
-                        $status = $statusService->getByTransactionId($paymentData->order_transaction_id);
-                        Plugin::processWebhookStatus(
-                            $order,
-                            $status->getCurrent(),
-                            $paymentData->merchant_reference_id
-                        );
+                        try {
+                            $status = $statusService->getByTransactionId($paymentData->order_transaction_id);
+                            Plugin::processWebhookStatus(
+                                $order,
+                                $status->getCurrent(),
+                                $paymentData->merchant_reference_id
+                            );
+                            set_transient(
+                                'enkap_admin_success_' . get_current_user_id(),
+                                __('Payment status successfully updated.', Plugin::DOMAIN_TEXT),
+                                30
+                            );
+                        } catch (Throwable $exception) {
+                            set_transient(
+                                'enkap_admin_error_' . get_current_user_id(),
+                                wp_strip_all_tags($exception->getMessage()),
+                                30
+                            );
+                        }
                     }
                 }
             }
 
-            wp_safe_redirect(wp_get_referer() ? wp_get_referer() : admin_url('edit.php?post_type=shop_order'));
+            $redirect = wp_get_referer();
+
+            if (!$redirect || !str_contains($redirect, admin_url())) {
+                $redirect = admin_url('edit.php?post_type=shop_order');
+            }
+            wp_safe_redirect($redirect);
             Helper::exitOrDie();
         }
 
