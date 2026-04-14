@@ -4,8 +4,13 @@ declare(strict_types=1);
 
 namespace Camoo\Enkap\WooCommerce\Repository;
 
+use Camoo\Enkap\WooCommerce\Plugin;
+
 use function esc_sql;
 use function sanitize_title;
+
+use WC_Logger_Interface;
+
 use function wp_is_uuid;
 use function wp_kses_post;
 
@@ -16,7 +21,7 @@ final class EnkapPaymentRepository
 {
     private const TABLE_NAME = 'wc_enkap_payments';
 
-    public function __construct(private wpdb $db)
+    public function __construct(private wpdb $db, private ?WC_Logger_Interface $logger = null)
     {
     }
 
@@ -41,6 +46,21 @@ final class EnkapPaymentRepository
                 $message .= ' Last query: ' . $this->db->last_query;
             }
 
+            $this->getLogger()->log(
+                'error',
+                wp_kses_post($message),
+                [
+                    'source' => Plugin::WC_ENKAP_GATEWAY_ID,
+                    'backtrace' => [
+                        [
+                            'file' => __FILE__,
+                            'line' => __LINE__,
+                            'function' => __FUNCTION__,
+                            'class' => __CLASS__,
+                        ],
+                    ],
+                ]
+            );
             throw new RepositoryException(wp_kses_post($message));
         }
     }
@@ -60,6 +80,23 @@ final class EnkapPaymentRepository
     public function getWcOrderIdByMerchantReferenceId(string $merchantReferenceId): ?int
     {
         if (!wp_is_uuid($merchantReferenceId)) {
+
+            $this->getLogger()->log(
+                'warning',
+                sprintf('Merchant reference id must be a UUID. Received: %s', $merchantReferenceId),
+                [
+                    'source' => Plugin::WC_ENKAP_GATEWAY_ID,
+                    'backtrace' => [
+                        [
+                            'file' => __FILE__,
+                            'line' => __LINE__,
+                            'function' => __FUNCTION__,
+                            'class' => __CLASS__,
+                        ],
+                    ],
+                ]
+            );
+
             return null;
         }
 
@@ -92,6 +129,22 @@ final class EnkapPaymentRepository
         $normalizedNewStatus = sanitize_title($newStatus);
 
         if ($current === $normalizedNewStatus) {
+            $this->getLogger()->log(
+                'warning',
+                sprintf('Merchant reference id "%s" is already in use.', $merchantReferenceId),
+                [
+                    'source' => Plugin::WC_ENKAP_GATEWAY_ID,
+                    'backtrace' => [
+                        [
+                            'file' => __FILE__,
+                            'line' => __LINE__,
+                            'function' => __FUNCTION__,
+                            'class' => __CLASS__,
+                        ],
+                    ],
+                ]
+            );
+
             return false;
         }
 
@@ -99,7 +152,16 @@ final class EnkapPaymentRepository
             $this->updateStatus($merchantReferenceId, $normalizedNewStatus, $remoteIp);
 
             return true;
-        } catch (RepositoryException) {
+        } catch (RepositoryException $exception) {
+            $this->getLogger()->log(
+                'error',
+                wp_kses_post($exception->getMessage()),
+                [
+                    'source' => Plugin::WC_ENKAP_GATEWAY_ID,
+                    'backtrace' => $exception->getTraceAsString(),
+                ]
+            );
+
             return false;
         }
     }
@@ -134,5 +196,14 @@ final class EnkapPaymentRepository
     private function getTableName(): string
     {
         return $this->db->prefix . self::TABLE_NAME;
+    }
+
+    private function getLogger(): WC_Logger_Interface
+    {
+        if ($this->logger === null) {
+            $this->logger = wc_get_logger();
+        }
+
+        return $this->logger;
     }
 }
