@@ -2,6 +2,7 @@
 
 namespace Camoo\Enkap\WooCommerce;
 
+use Camoo\Enkap\WooCommerce\Repository\EnkapPaymentRepository;
 use Enkap\OAuth\Enum\PaymentStatus;
 use Enkap\OAuth\Lib\Helper;
 use Enkap\OAuth\Model\CallbackUrl;
@@ -20,19 +21,17 @@ defined('ABSPATH') || exit;
 
 class WC_Enkap_Gateway extends WC_Payment_Gateway
 {
-    /** @var string */
-    private $consumerKey;
+    private string $consumerKey;
 
-    /** @var string */
-    private $consumerSecret;
+    private string $consumerSecret;
 
-    private $instructions;
+    private string $instructions;
 
-    /** @var bool */
-    private $testMode;
+    private bool $testMode;
 
-    /** @var Logger\Logger $logger */
-    private $logger;
+    private Logger\Logger $logger;
+
+    private EnkapPaymentRepository $paymentRepository;
 
     public function __construct()
     {
@@ -44,7 +43,8 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
         $this->init_settings();
 
         $this->title = esc_html($this->get_option('title'));
-        $this->method_title = esc_html($this->get_option('method_title'));
+        $methodTitle = esc_html($this->get_option('method_title'));
+        $this->method_title = $methodTitle ?: 'SmobilPay for e-Commerce';
         $this->method_description = esc_html($this->get_option('description'));
         $this->enabled = sanitize_text_field($this->get_option('enabled'));
         $this->testMode = 'yes' === sanitize_text_field($this->get_option('test_mode'));
@@ -56,6 +56,9 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
         $this->registerHooks();
 
         $this->logger = new Logger\Logger($this->id, WP_DEBUG || $this->testMode);
+        global $wpdb;
+
+        $this->paymentRepository = new EnkapPaymentRepository($wpdb);
     }
 
     public function init_form_fields()
@@ -78,10 +81,14 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
             'description' => [
                 'title' => __('Description', 'woocommerce'),
                 'type' => 'textarea',
-                'description' => __('This controls the description which the user sees during checkout.',
-                    'woocommerce'),
-                'default' => __('Pay with your mobile phone via SmobilPay for e-commerce payment gateway.',
-                    Plugin::DOMAIN_TEXT),
+                'description' => __(
+                    'This controls the description which the user sees during checkout.',
+                    'woocommerce'
+                ),
+                'default' => __(
+                    'Pay with your mobile phone via SmobilPay for e-commerce payment gateway.',
+                    Plugin::DOMAIN_TEXT
+                ),
                 'desc_tip' => true,
             ],
             'instructions' => [
@@ -292,20 +299,6 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
         return apply_filters('woocommerce_gateway_icon', $icon_html, $this->id);
     }
 
-    protected function logEnkapPayment(int $orderId, string $merchantReferenceId, string $orderTransactionId): void
-    {
-        global $wpdb;
-
-        $wpdb->insert(
-            $wpdb->prefix . 'wc_enkap_payments',
-            [
-                'wc_order_id' => absint(wp_unslash($orderId)),
-                'order_transaction_id' => sanitize_text_field($orderTransactionId),
-                'merchant_reference_id' => sanitize_text_field($merchantReferenceId),
-            ]
-        );
-    }
-
     private function registerHooks(): void
     {
         add_action('woocommerce_update_options_payment_gateways_' . $this->id, [$this, 'process_admin_options']);
@@ -321,12 +314,8 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
         return new OrderService($this->consumerKey, $this->consumerSecret, $this->testMode);
     }
 
-    /**
-     * @throws Exception
-     *
-     * @return Order|null
-     */
-    private function placeOrder(OrderService $orderService, array $orderData)
+    /** @throws Exception */
+    private function placeOrder(OrderService $orderService, array $orderData): ?Order
     {
         /** @var Order $order */
         $order = $orderService->loadModel(Order::class);
@@ -335,6 +324,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
         return $orderService->place($order);
     }
 
+    /** @return array<string, mixed> */
     private function prepareOrderData(WC_Order $wcOrder, string $merchantReferenceId): array
     {
         $order_data = $wcOrder->get_data();
@@ -372,7 +362,8 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
         }
         $wcOrder->update_status('on-hold', __('Awaiting SmobilPay payment confirmation', 'wc-wp-enkap'));
         WC()->cart->empty_cart();
-        $this->logEnkapPayment(
+
+        $this->paymentRepository->insert(
             $wcOrder->get_id(),
             sanitize_text_field($merchantReferenceId),
             sanitize_text_field($response->getOrderTransactionId())

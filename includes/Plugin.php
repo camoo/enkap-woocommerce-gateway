@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Description of Plugin
  *
@@ -8,6 +9,7 @@
 namespace Camoo\Enkap\WooCommerce;
 
 use Camoo\Enkap\WooCommerce\Admin\PluginAdmin;
+use Camoo\Enkap\WooCommerce\Repository\EnkapPaymentRepository;
 use Enkap\OAuth\Enum\PaymentStatus;
 use WC_Geolocation;
 use WC_Order;
@@ -18,7 +20,7 @@ defined('ABSPATH') || exit;
 if (!class_exists(Plugin::class)) {
     class Plugin
     {
-        public const WP_WC_ENKAP_DB_VERSION = '1.1.0';
+        public const WP_WC_ENKAP_DB_VERSION = '1.1.1';
 
         public const DOMAIN_TEXT = 'wc-wp-enkap';
 
@@ -26,7 +28,7 @@ if (!class_exists(Plugin::class)) {
 
         protected $id;
 
-        protected $mainMenuId;
+        protected string $mainMenuId;
 
         protected $adapterName;
 
@@ -43,6 +45,8 @@ if (!class_exists(Plugin::class)) {
         protected $pluginPath;
 
         protected $version;
+
+        private static EnkapPaymentRepository $paymentRepository;
 
         public function __construct($pluginPath, $adapterName, $adapterFile, $description = '', $version = null)
         {
@@ -63,9 +67,12 @@ if (!class_exists(Plugin::class)) {
 
             $this->mainMenuId = 'admin.php';
             $this->title = 'SmobilPay for e-commerce - Payment Gateway for WooCommerce';
+            global $wpdb;
+
+            self::$paymentRepository = new EnkapPaymentRepository($wpdb);
         }
 
-        public function register()
+        public function register(): void
         {
             require_once ABSPATH . 'wp-admin/includes/plugin.php';
             require_once __DIR__ . '/Install.php';
@@ -88,7 +95,7 @@ if (!class_exists(Plugin::class)) {
                 'woocommerce_blocks_payment_method_type_registration',
                 function ($registry) {
                     require_once __DIR__ . '/EnkapBlocksSupport.php';
-                    $registry->register(new \Camoo\Enkap\WooCommerce\EnkapBlocksSupport());
+                    $registry->register(new EnkapBlocksSupport());
                 }
             );
             add_action(
@@ -98,7 +105,7 @@ if (!class_exists(Plugin::class)) {
                         return;
                     }
 
-                    $gateway = new \Camoo\Enkap\WooCommerce\WC_Enkap_Gateway();
+                    $gateway = new WC_Enkap_Gateway();
 
                     $response = $gateway->process_payment($context->order->get_id());
 
@@ -116,7 +123,7 @@ if (!class_exists(Plugin::class)) {
             }
         }
 
-        public function route_status_plugin_deactivate()
+        public function route_status_plugin_deactivate(): void
         {
             flush_rewrite_rules();
         }
@@ -136,7 +143,7 @@ if (!class_exists(Plugin::class)) {
             return $gateways;
         }
 
-        public function onInit()
+        public function onInit(): void
         {
             $this->loadGatewayClass();
             add_action('init', [__CLASS__, 'loadTextDomain']);
@@ -181,22 +188,13 @@ if (!class_exists(Plugin::class)) {
 
         public static function getWcOrderIdByMerchantReferenceId(string $merchantReferenceId): ?int
         {
-            global $wpdb;
             if (!wp_is_uuid(sanitize_text_field($merchantReferenceId))) {
                 return null;
             }
 
-            $db_prepare = $wpdb->prepare(
-                "SELECT * FROM `{$wpdb->prefix}wc_enkap_payments` WHERE `merchant_reference_id` = %s",
-                $merchantReferenceId
+            return self::$paymentRepository->getWcOrderIdByMerchantReferenceId(
+                sanitize_text_field($merchantReferenceId)
             );
-            $payment = $wpdb->get_row($db_prepare);
-
-            if (!$payment) {
-                return null;
-            }
-
-            return (int)$payment->wc_order_id;
         }
 
         public static function getLanguageKey(): string
@@ -222,7 +220,7 @@ if (!class_exists(Plugin::class)) {
             );
         }
 
-        public function return_route()
+        public function return_route(): void
         {
             register_rest_route(
                 'wc-e-nkap/return',
@@ -243,7 +241,7 @@ if (!class_exists(Plugin::class)) {
             );
         }
 
-        public function notification_route()
+        public function notification_route(): void
         {
             register_rest_route(
                 'wc-e-nkap/notification',
@@ -261,8 +259,7 @@ if (!class_exists(Plugin::class)) {
             match ($status) {
                 PaymentStatus::IN_PROGRESS_STATUS,
                 PaymentStatus::CREATED_STATUS,
-                PaymentStatus::INITIALISED_STATUS
-                => self::processWebhookProgress($order, $merchantReferenceId, $status),
+                PaymentStatus::INITIALISED_STATUS => self::processWebhookProgress($order, $merchantReferenceId, $status),
                 PaymentStatus::CONFIRMED_STATUS => self::processWebhookConfirmed($order, $merchantReferenceId),
                 PaymentStatus::CANCELED_STATUS => self::processWebhookCanceled($order, $merchantReferenceId),
                 PaymentStatus::FAILED_STATUS => self::processWebhookFailed($order, $merchantReferenceId),
@@ -312,22 +309,20 @@ if (!class_exists(Plugin::class)) {
 
         private static function applyStatusChange(PaymentStatus $status, string $merchantReferenceId): void
         {
-            global $wpdb;
             $remoteIp = WC_Geolocation::get_ip_address();
-            $setData = [
-                'status_date' => current_time('mysql'),
-                'status' => sanitize_title($status->value),
-            ];
+
             if ($remoteIp) {
-                $setData['remote_ip'] = sanitize_text_field($remoteIp);
+                $remoteIp = sanitize_text_field($remoteIp);
             }
-            $wpdb->update(
-                $wpdb->prefix . 'wc_enkap_payments',
-                $setData,
-                [
-                    'merchant_reference_id' => sanitize_text_field($merchantReferenceId),
-                ]
+
+            $changed = self::$paymentRepository->updateStatusIfChanged(
+                sanitize_text_field($merchantReferenceId),
+                sanitize_text_field($status->value),
+                $remoteIp
             );
+            if (!$changed) {
+                return;
+            }
 
             /**
              * Executes the hook smobilpay_after_status_change where ever it's defined.
