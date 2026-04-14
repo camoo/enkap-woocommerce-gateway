@@ -38,7 +38,14 @@ final class EnkapPaymentRepository
         $result = $this->wpdb->insert($this->getTableName(), $data, $types);
 
         if ($result === false) {
-            throw new RepositoryException('Failed to insert Enkap payment record.');
+            $message = 'Failed to insert Enkap payment record.';
+            if ($this->wpdb->last_error !== '') {
+                $message .= ' DB error: ' . $this->wpdb->last_error . '.';
+            }
+            if ($this->wpdb->last_query !== '') {
+                $message .= ' Last query: ' . $this->wpdb->last_query;
+            }
+            throw new RepositoryException($message);
         }
     }
 
@@ -118,7 +125,7 @@ final class EnkapPaymentRepository
             ['%s']
         );
 
-        if ($result === false || $this->wpdb->last_error) {
+        if ($result === false || $result === 0 || $this->wpdb->last_error) {
             throw new RepositoryException('Failed to update payment status.');
         }
     }

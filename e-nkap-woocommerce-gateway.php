@@ -30,10 +30,11 @@ use Automattic\WooCommerce\Utilities\FeaturesUtil;
 
 defined('ABSPATH') || exit;
 
-require_once __DIR__ . '/includes/Plugin.php';
-require_once __DIR__ . '/includes/admin/PluginAdmin.php';
 require_once __DIR__ . '/includes/Repository/EnkapPaymentRepository.php';
 require_once __DIR__ . '/includes/Repository/RepositoryException.php';
+require_once __DIR__ . '/includes/Plugin.php';
+require_once __DIR__ . '/includes/admin/PluginAdmin.php';
+
 /**
  * Declare HPOS (High-Performance Order Storage) compatibility
  */
