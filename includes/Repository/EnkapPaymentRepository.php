@@ -11,11 +11,12 @@ use function wp_kses_post;
 
 use wpdb;
 
+defined('ABSPATH') || exit; // Exit if accessed directly
 final class EnkapPaymentRepository
 {
     private const TABLE_NAME = 'wc_enkap_payments';
 
-    public function __construct(private wpdb $wpdb)
+    public function __construct(private wpdb $db)
     {
     }
 
@@ -29,15 +30,15 @@ final class EnkapPaymentRepository
 
         $types = ['%d', '%s', '%s'];
 
-        $result = $this->wpdb->insert(esc_sql($this->getTableName()), $data, $types);
+        $result = $this->db->insert(esc_sql($this->getTableName()), $data, $types);
 
         if ($result === false) {
             $message = 'Failed to insert Enkap payment record.';
-            if ($this->wpdb->last_error !== '') {
-                $message .= ' DB error: ' . $this->wpdb->last_error . '.';
+            if ($this->db->last_error !== '') {
+                $message .= ' DB error: ' . $this->db->last_error . '.';
             }
-            if ($this->wpdb->last_query !== '') {
-                $message .= ' Last query: ' . $this->wpdb->last_query;
+            if ($this->db->last_query !== '') {
+                $message .= ' Last query: ' . $this->db->last_query;
             }
 
             throw new RepositoryException(wp_kses_post($message));
@@ -49,12 +50,8 @@ final class EnkapPaymentRepository
         $table = esc_sql($this->getTableName());
 
         // phpcs:disable WordPress.DB.PreparedSQL.NotPrepared
-        $query = $this->wpdb->prepare(
-            'SELECT * FROM ' . $table . ' WHERE wc_order_id = %d LIMIT 1',
-            $wcOrderId
-        );
-
-        $result = $this->wpdb->get_row($query);
+        $query = $this->db->prepare('SELECT * FROM ' . $table . ' WHERE wc_order_id = %d LIMIT 1', $wcOrderId);
+        $result = $this->db->get_row($query);
         // phpcs:enable WordPress.DB.PreparedSQL.NotPrepared
 
         return $result ?: null;
@@ -69,12 +66,12 @@ final class EnkapPaymentRepository
         $table = esc_sql($this->getTableName());
 
         // phpcs:disable WordPress.DB.PreparedSQL.NotPrepared
-        $query = $this->wpdb->prepare(
+        $query = $this->db->prepare(
             'SELECT wc_order_id FROM ' . $table . ' WHERE merchant_reference_id = %s LIMIT 1',
             $merchantReferenceId
         );
 
-        $result = $this->wpdb->get_var($query);
+        $result = $this->db->get_var($query);
         // phpcs:enable WordPress.DB.PreparedSQL.NotPrepared
 
         return $result !== null ? (int)$result : null;
@@ -85,12 +82,12 @@ final class EnkapPaymentRepository
         $table = esc_sql($this->getTableName());
 
         // phpcs:disable WordPress.DB.PreparedSQL.NotPrepared
-        $query = $this->wpdb->prepare(
+        $query = $this->db->prepare(
             'SELECT `status` FROM ' . $table . ' WHERE merchant_reference_id = %s LIMIT 1',
             $merchantReferenceId
         );
 
-        $current = $this->wpdb->get_var($query);
+        $current = $this->db->get_var($query);
         // phpcs:enable WordPress.DB.PreparedSQL.NotPrepared
         $normalizedNewStatus = sanitize_title($newStatus);
 
@@ -121,7 +118,7 @@ final class EnkapPaymentRepository
             $formats[] = '%s';
         }
 
-        $result = $this->wpdb->update(
+        $result = $this->db->update(
             esc_sql($this->getTableName()),
             $data,
             ['merchant_reference_id' => $merchantReferenceId],
@@ -129,13 +126,13 @@ final class EnkapPaymentRepository
             ['%s']
         );
 
-        if ($result === false || $this->wpdb->last_error) {
+        if ($result === false || $this->db->last_error) {
             throw new RepositoryException('Failed to update payment status.');
         }
     }
 
     private function getTableName(): string
     {
-        return $this->wpdb->prefix . self::TABLE_NAME;
+        return $this->db->prefix . self::TABLE_NAME;
     }
 }

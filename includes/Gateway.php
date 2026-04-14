@@ -43,7 +43,8 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
         $this->init_settings();
 
         $this->title = esc_html($this->get_option('title'));
-        $this->method_title = esc_html($this->get_option('method_title'));
+        $methodTitle = esc_html($this->get_option('method_title'));
+        $this->method_title = $methodTitle ?: 'SmobilPay for e-Commerce';
         $this->method_description = esc_html($this->get_option('description'));
         $this->enabled = sanitize_text_field($this->get_option('enabled'));
         $this->testMode = 'yes' === sanitize_text_field($this->get_option('test_mode'));
@@ -313,9 +314,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
         return new OrderService($this->consumerKey, $this->consumerSecret, $this->testMode);
     }
 
-    /**
-     * @throws Exception
-     */
+    /** @throws Exception */
     private function placeOrder(OrderService $orderService, array $orderData): ?Order
     {
         /** @var Order $order */
@@ -325,9 +324,7 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
         return $orderService->place($order);
     }
 
-    /**
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     private function prepareOrderData(WC_Order $wcOrder, string $merchantReferenceId): array
     {
         $order_data = $wcOrder->get_data();

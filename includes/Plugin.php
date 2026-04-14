@@ -28,7 +28,7 @@ if (!class_exists(Plugin::class)) {
 
         protected $id;
 
-        protected $mainMenuId;
+        protected string $mainMenuId;
 
         protected $adapterName;
 
@@ -123,7 +123,7 @@ if (!class_exists(Plugin::class)) {
             }
         }
 
-        public function route_status_plugin_deactivate()
+        public function route_status_plugin_deactivate(): void
         {
             flush_rewrite_rules();
         }
@@ -220,7 +220,7 @@ if (!class_exists(Plugin::class)) {
             );
         }
 
-        public function return_route()
+        public function return_route(): void
         {
             register_rest_route(
                 'wc-e-nkap/return',
@@ -241,7 +241,7 @@ if (!class_exists(Plugin::class)) {
             );
         }
 
-        public function notification_route()
+        public function notification_route(): void
         {
             register_rest_route(
                 'wc-e-nkap/notification',
