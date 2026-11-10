@@ -3,9 +3,9 @@ Contributors: camoo, maviance
 Tags: Mobile Money, Orange Money, MTN Mobile Money, Express Union Mobile Money, Cameroon
 Requires at least: 6.7
 Requires Plugins: woocommerce
-Tested up to: 6.9
+Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 1.1.1
+Stable tag: 1.1.2
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -35,6 +35,17 @@ The smobilpay platform Boasts of being a major partner with giant service provid
 * Pay with Cameroon Orange Mobile Money
 * Pay with Express Union Mobile Money
 * Pay with SmobilPay Cash
+* Sandbox and live payment modes
+* HPOS-compatible order management
+* Authenticated callback verification against the E-nkap API
+* Idempotent webhook processing with safe callback retries
+
+= Security and reliability =
+Payment callbacks are verified against the authenticated E-nkap API before an order is updated. The remote transaction, merchant reference, amount, and currency are checked against the WooCommerce order.
+
+Webhook status transitions are protected against duplicate and out-of-order callbacks. Confirmed payments use WooCommerce's native payment-completion flow so stock, payment dates, order status, and related hooks are handled by WooCommerce.
+
+The gateway is available only when the store currency matches the configured gateway currency. The current supported currency is XAF (CFA-Franc BEAC).
 
 == Frequently Asked Questions ==
 
@@ -78,6 +89,10 @@ More details can be found on the [documentation website](https://support.enkap.c
 * PHP version 8.3 or greater.
 * MySQL version 8.0 or greater.
 
+= Compatibility =
+* WordPress tested up to 7.1.
+* WooCommerce tested up to 11.2.2.
+
 == Upgrade Notice ==
 
 == Changelog ==
@@ -92,6 +107,16 @@ More details can be found on the [documentation website](https://support.enkap.c
 N/A
 
 == Changelog ==
+
+= 1.1.2: 10 Nov, 2026 =
+* Security: authenticated callback verification added for return and notification requests
+* Fix: prevent duplicate, concurrent, and stale webhook status transitions
+* Fix: use WooCommerce payment completion for confirmed payments
+* Fix: acknowledge already-completed webhook deliveries with HTTP 200
+* Fix: prevent checkout success responses when payment initialization is incomplete
+* Fix: enforce configured currency compatibility at checkout
+* Fix: correct multisite payment-table cleanup
+* Test: add payment-flow regression coverage
 
 = 1.1.1: 14 Apr, 2026 =
 * Fix: db actions for the plugin changed to the new enkap repository

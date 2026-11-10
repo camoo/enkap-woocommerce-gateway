@@ -62,6 +62,17 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
         $this->paymentRepository = new EnkapPaymentRepository($wpdb);
     }
 
+    public function is_available(): bool
+    {
+        if (!parent::is_available()) {
+            return false;
+        }
+
+        $gatewayCurrency = strtoupper((string)$this->get_option('enkap_currency', 'XAF'));
+
+        return $gatewayCurrency !== '' && strtoupper(get_woocommerce_currency()) === $gatewayCurrency;
+    }
+
     public function init_form_fields()
     {
         $wc_enkap_settings = [
@@ -199,15 +210,39 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
             $orderData = $this->prepareOrderData($wcOrder, $merchantReferenceId);
             $response = $this->placeOrder($orderService, $orderData);
 
+            if (!$response instanceof Order) {
+                $this->logger->error(__FILE__, __LINE__, 'Payment initialization returned no order.');
+                wc_add_notice(
+                    __('Unable to initialize payment with SmobilPay. Please try again.', Plugin::DOMAIN_TEXT),
+                    'error'
+                );
+
+                return [];
+            }
+
+            $redirectUrl = $response->getRedirectUrl();
+            if (!is_string($redirectUrl) || $redirectUrl === '') {
+                $this->logger->error(__FILE__, __LINE__, 'Payment initialization returned no redirect URL.');
+                wc_add_notice(
+                    __('Unable to initialize payment with SmobilPay. Please try again.', Plugin::DOMAIN_TEXT),
+                    'error'
+                );
+
+                return [];
+            }
+
             $this->handleOrderResponse($wcOrder, $merchantReferenceId, $response);
 
             return [
                 'result' => 'success',
-                'redirect' => $response->getRedirectUrl(),
+                'redirect' => $redirectUrl,
             ];
         } catch (Throwable $exception) {
             $this->logger->error(__FILE__, __LINE__, $exception->getMessage());
-            wc_add_notice($exception->getMessage(), 'error');
+            wc_add_notice(
+                __('Unable to initialize payment with SmobilPay. Please try again.', Plugin::DOMAIN_TEXT),
+                'error'
+            );
 
             return [];
         }
@@ -273,12 +308,12 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
         }
 
         if ($order->has_status($this->getTerminalOrderStatuses())) {
-            $this->logger->warning(__FILE__, __LINE__, 'onNotification:: Terminal order rejected');
+            $this->logger->info(__FILE__, __LINE__, 'onNotification:: Terminal order already processed');
 
             return new WP_REST_Response([
-                'status' => 'KO',
+                'status' => 'OK',
                 'message' => 'Order is already in a terminal state',
-            ], 409);
+            ], 200);
         }
 
         try {
@@ -361,9 +396,19 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
 
         $statusService = new StatusService($this->consumerKey, $this->consumerSecret, $this->testMode);
         $status = $statusService->getByTransactionId($transactionId);
+        if (!is_object($status) || !method_exists($status, 'getCurrent')) {
+            $this->logger->error(__FILE__, __LINE__, 'Payment verification failed: invalid remote status');
+
+            return null;
+        }
 
         $paymentService = new PaymentService($this->consumerKey, $this->consumerSecret, $this->testMode);
         $payment = $paymentService->getByTransactionId($transactionId);
+        if (!is_object($payment) || !method_exists($payment, 'getOrder')) {
+            $this->logger->error(__FILE__, __LINE__, 'Payment verification failed: invalid remote payment');
+
+            return null;
+        }
         $remoteOrder = $payment->getOrder();
 
         if ($remoteOrder === null) {
@@ -464,14 +509,20 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
         if (null === $response) {
             return;
         }
-        $wcOrder->update_status('on-hold', __('Awaiting SmobilPay payment confirmation', 'wc-wp-enkap'));
-        WC()->cart->empty_cart();
 
+        // Persist the transaction mapping before changing the order/cart state. If the
+        // database write fails, checkout can fail without leaving local payment state half-applied.
         $this->paymentRepository->insert(
             $wcOrder->get_id(),
             sanitize_text_field($merchantReferenceId),
             sanitize_text_field($response->getOrderTransactionId())
         );
+
+        $wcOrder->update_status('on-hold', __('Awaiting SmobilPay payment confirmation', 'wc-wp-enkap'));
+        $woocommerce = WC();
+        if ($woocommerce && $woocommerce->cart) {
+            $woocommerce->cart->empty_cart();
+        }
 
         $wcOrder->add_order_note(
             __('Your order is under process. Thank you!', Plugin::DOMAIN_TEXT),

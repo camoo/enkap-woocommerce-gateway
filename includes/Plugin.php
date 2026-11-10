@@ -263,58 +263,91 @@ if (!class_exists(Plugin::class)) {
                 return;
             }
 
-            match ($status) {
+            $isProcessable = match ($status) {
                 PaymentStatus::IN_PROGRESS_STATUS,
                 PaymentStatus::CREATED_STATUS,
-                PaymentStatus::INITIALISED_STATUS => self::processWebhookProgress($order, $merchantReferenceId, $status),
-                PaymentStatus::CONFIRMED_STATUS => self::processWebhookConfirmed($order, $merchantReferenceId),
-                PaymentStatus::CANCELED_STATUS => self::processWebhookCanceled($order, $merchantReferenceId),
-                PaymentStatus::FAILED_STATUS => self::processWebhookFailed($order, $merchantReferenceId),
-
-                default => null,
+                PaymentStatus::INITIALISED_STATUS,
+                PaymentStatus::CONFIRMED_STATUS,
+                PaymentStatus::CANCELED_STATUS,
+                PaymentStatus::FAILED_STATUS => true,
+                default => false,
             };
+
+            // Claim the transition before changing WooCommerce state. This makes duplicate
+            // callbacks harmless even when they are handled concurrently.
+            if (!$isProcessable || !self::applyStatusChange($status, $merchantReferenceId)) {
+                return;
+            }
+
+            // The order may have become terminal while the remote verification was running.
+            // Do not apply side effects to a stale order object in that case.
+            if (
+                $order instanceof WC_Order &&
+                $order->has_status(['completed', 'cancelled', 'failed', 'refunded'])
+            ) {
+                return;
+            }
+
+            try {
+                match ($status) {
+                    PaymentStatus::IN_PROGRESS_STATUS,
+                    PaymentStatus::CREATED_STATUS,
+                    PaymentStatus::INITIALISED_STATUS => self::processWebhookProgress($order),
+                    PaymentStatus::CONFIRMED_STATUS => self::processWebhookConfirmed($order),
+                    PaymentStatus::CANCELED_STATUS => self::processWebhookCanceled($order),
+                    PaymentStatus::FAILED_STATUS => self::processWebhookFailed($order),
+
+                    default => null,
+                };
+            } catch (\Throwable $exception) {
+                try {
+                    self::$paymentRepository->resetStatusIfCurrent($merchantReferenceId, $status->value);
+                } catch (\Throwable) {
+                    // Preserve the original WooCommerce failure for the caller/retry path.
+                }
+
+                throw $exception;
+            }
+
+            /** @since 1.0.3 */
+            do_action('smobilpay_after_status_change', sanitize_text_field($merchantReferenceId), 'wc');
         }
 
         /** @param bool|WC_Order|WC_Order_Refund $order */
-        private static function processWebhookConfirmed($order, string $merchantReferenceId): void
+        private static function processWebhookConfirmed($order): void
         {
-            $order->update_status('completed');
-            wc_reduce_stock_levels($order->get_id());
-            self::applyStatusChange(PaymentStatus::CONFIRMED_STATUS, $merchantReferenceId);
+            $order->payment_complete();
             $order->add_order_note(__('SmobilPay payment completed', Plugin::DOMAIN_TEXT), true);
         }
 
         /** @param bool|WC_Order|WC_Order_Refund $order */
-        private static function processWebhookProgress($order, string $merchantReferenceId, PaymentStatus $status): void
+        private static function processWebhookProgress($order): void
         {
             $currentStatus = $order->get_status();
             if ($currentStatus === 'completed') {
                 return;
             }
             $order->update_status('pending');
-            self::applyStatusChange($status, $merchantReferenceId);
             do_action('woocommerce_order_edit_status', $order->get_id(), 'pending');
         }
 
         /** @param bool|WC_Order|WC_Order_Refund $order */
-        private static function processWebhookCanceled($order, string $merchantReferenceId): void
+        private static function processWebhookCanceled($order): void
         {
             $order->update_status('cancelled');
-            self::applyStatusChange(PaymentStatus::CANCELED_STATUS, $merchantReferenceId);
             $order->add_order_note(__('SmobilPay payment cancelled', Plugin::DOMAIN_TEXT), true);
             do_action('woocommerce_order_edit_status', $order->get_id(), 'cancelled');
         }
 
         /** @param bool|WC_Order|WC_Order_Refund $order */
-        private static function processWebhookFailed($order, string $merchantReferenceId): void
+        private static function processWebhookFailed($order): void
         {
             $order->update_status('failed');
-            self::applyStatusChange(PaymentStatus::FAILED_STATUS, $merchantReferenceId);
             $order->add_order_note(__('SmobilPay payment failed', Plugin::DOMAIN_TEXT), true);
             do_action('woocommerce_order_edit_status', $order->get_id(), 'failed');
         }
 
-        private static function applyStatusChange(PaymentStatus $status, string $merchantReferenceId): void
+        private static function applyStatusChange(PaymentStatus $status, string $merchantReferenceId): bool
         {
             $remoteIp = WC_Geolocation::get_ip_address();
 
@@ -322,37 +355,12 @@ if (!class_exists(Plugin::class)) {
                 $remoteIp = sanitize_text_field($remoteIp);
             }
 
-            $changed = self::$paymentRepository->updateStatusIfChanged(
+            return self::$paymentRepository->updateStatusIfChanged(
                 sanitize_text_field($merchantReferenceId),
                 sanitize_text_field($status->value),
                 $remoteIp
             );
-            if (!$changed) {
-                return;
-            }
 
-            /**
-             * Executes the hook smobilpay_after_status_change where ever it's defined.
-             *
-             * Example usage:
-             *
-             *     // The action callback function.
-             *     function example_callback( $id, $shopType ) {
-             *         // (maybe) do something with the args.
-             *     }
-             *
-             *     add_action( 'smobilpay_after_status_change', 'example_callback', 10, 2 );
-             *
-             *     /*
-             *      * Trigger the actions by calling the 'example_callback()' function
-             *      * that's hooked onto `smobilpay_after_status_change`.
-             *
-             *      * - $id is either the transaction ID or the merchant reference ID
-             *      * - $shopType is the shop invoked actually the hook
-             *
-             * @since 1.0.3
-             */
-            do_action('smobilpay_after_status_change', sanitize_text_field($merchantReferenceId), 'wc');
         }
     }
 }

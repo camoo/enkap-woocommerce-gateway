@@ -6,9 +6,9 @@
  * Plugin URI: https://enkap.cm/
  * Description: Receive Mobile Money payments on your store using SmobilPay for e-commerce.
  * Version: 1.1.2
- * Tested up to: 6.9
+ * Tested up to: 7.1
  * WC requires at least: 3.2
- * WC tested up to: 8.9.1
+ * WC tested up to: 11.2.2
  * Author: Camoo Sarl
  * Author URI: https://www.camoo.cm/
  * Developer: Camoo Sarl
