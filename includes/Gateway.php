@@ -9,13 +9,14 @@ use Enkap\OAuth\Model\CallbackUrl;
 use Enkap\OAuth\Model\Order;
 use Enkap\OAuth\Services\CallbackUrlService;
 use Enkap\OAuth\Services\OrderService;
+use Enkap\OAuth\Services\PaymentService;
+use Enkap\OAuth\Services\StatusService;
 use Exception;
 use Throwable;
 use WC_HTTPS;
 use WC_Order;
 use WC_Payment_Gateway;
 use WP_REST_Response;
-use WP_REST_Server;
 
 defined('ABSPATH') || exit;
 
@@ -223,15 +224,22 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
             wp_safe_redirect(get_permalink(wc_get_page_id('shop')));
             Helper::exitOrDie();
         }
-        $status = filter_input(INPUT_GET, 'status');
-        $normalizedStatus = wc_clean($status);
-        $paymentStatus = PaymentStatus::tryFrom($normalizedStatus);
 
-        if ($paymentStatus && ($order = wc_get_order($orderId))) {
-            Plugin::processWebhookStatus($order, $paymentStatus, $merchantReferenceId);
+        $order = wc_get_order($orderId);
+        if ($order instanceof WC_Order && !$order->has_status($this->getTerminalOrderStatuses())) {
+            try {
+                // The return URL is public and its query string is user-controlled. Never use its
+                // status value to update the order; verify the transaction with E-nkap instead.
+                $paymentStatus = $this->getVerifiedPaymentStatus($order, $merchantReferenceId);
+                if ($paymentStatus !== null) {
+                    Plugin::processWebhookStatus($order, $paymentStatus, $merchantReferenceId);
+                }
+            } catch (Throwable $exception) {
+                $this->logger->error(__FILE__, __LINE__, 'OnReturn:: Payment verification failed');
+            }
         }
 
-        $shopPageUrl = isset($order) ? $order->get_checkout_order_received_url() :
+        $shopPageUrl = $order instanceof WC_Order ? $order->get_checkout_order_received_url() :
             get_permalink(wc_get_page_id('shop'));
 
         if (wp_safe_redirect($shopPageUrl)) {
@@ -254,15 +262,9 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
             ], 400);
         }
 
-        $requestBody = WP_REST_Server::get_raw_data();
-        $bodyData = json_decode($requestBody, true);
-
-        $status = $bodyData['status'];
-        $normalizedStatus = wc_clean($status);
-        $paymentStatus = PaymentStatus::tryFrom($normalizedStatus);
-
-        if (empty($paymentStatus)) {
-            $this->logger->error(__FILE__, __LINE__, 'onNotification:: Invalid status ' . $status);
+        $order = wc_get_order($orderId);
+        if (!$order instanceof WC_Order) {
+            $this->logger->error(__FILE__, __LINE__, 'onNotification:: WooCommerce order not found');
 
             return new WP_REST_Response([
                 'status' => 'KO',
@@ -270,18 +272,39 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
             ], 400);
         }
 
-        $order = wc_get_order($orderId);
-        $oldStatus = '';
-        if ($order) {
-            $oldStatus = $order->get_status();
-            Plugin::processWebhookStatus($order, $paymentStatus, $merchantReferenceId);
+        if ($order->has_status($this->getTerminalOrderStatuses())) {
+            $this->logger->warning(__FILE__, __LINE__, 'onNotification:: Terminal order rejected');
+
+            return new WP_REST_Response([
+                'status' => 'KO',
+                'message' => 'Order is already in a terminal state',
+            ], 409);
         }
 
-        $this->logger->info(
-            __FILE__,
-            __LINE__,
-            'onNotification:: status ' . $status . ' updates successfully'
-        );
+        try {
+            // E-nkap's callback body is not authenticated by the SDK. The status in that body
+            // must therefore be treated as untrusted and is deliberately not read here.
+            $paymentStatus = $this->getVerifiedPaymentStatus($order, $merchantReferenceId);
+        } catch (Throwable $exception) {
+            $this->logger->error(__FILE__, __LINE__, 'onNotification:: Payment verification failed');
+
+            return new WP_REST_Response([
+                'status' => 'KO',
+                'message' => 'Payment verification failed',
+            ], 503);
+        }
+
+        if ($paymentStatus === null) {
+            $this->logger->error(__FILE__, __LINE__, 'onNotification:: Payment verification rejected');
+
+            return new WP_REST_Response([
+                'status' => 'KO',
+                'message' => 'Payment verification failed',
+            ], 400);
+        }
+
+        $oldStatus = $order->get_status();
+        Plugin::processWebhookStatus($order, $paymentStatus, $merchantReferenceId);
 
         return new WP_REST_Response([
             'status' => 'OK',
@@ -312,6 +335,87 @@ class WC_Enkap_Gateway extends WC_Payment_Gateway
     private function createOrderService(): OrderService
     {
         return new OrderService($this->consumerKey, $this->consumerSecret, $this->testMode);
+    }
+
+    /**
+     * Verify a callback using E-nkap's authenticated API instead of request-controlled data.
+     *
+     * The current E-nkap SDK does not expose a signed-webhook verifier. The transaction id is
+     * read from the payment row created during checkout, then both the remote status and the
+     * remote order details are fetched over the authenticated API. The remote order must match
+     * the WooCommerce order before any status transition is allowed.
+     */
+    private function getVerifiedPaymentStatus(WC_Order $order, string $merchantReferenceId): ?PaymentStatus
+    {
+        $paymentData = $this->paymentRepository->getPaymentByMerchantReferenceId($merchantReferenceId);
+        $transactionId = sanitize_text_field($paymentData->order_transaction_id ?? '');
+
+        if (
+            $transactionId === '' ||
+            (int)($paymentData->wc_order_id ?? 0) !== $order->get_id()
+        ) {
+            $this->logger->error(__FILE__, __LINE__, 'Payment verification failed: transaction not found');
+
+            return null;
+        }
+
+        $statusService = new StatusService($this->consumerKey, $this->consumerSecret, $this->testMode);
+        $status = $statusService->getByTransactionId($transactionId);
+
+        $paymentService = new PaymentService($this->consumerKey, $this->consumerSecret, $this->testMode);
+        $payment = $paymentService->getByTransactionId($transactionId);
+        $remoteOrder = $payment->getOrder();
+
+        if ($remoteOrder === null) {
+            $this->logger->error(__FILE__, __LINE__, 'Payment verification failed: remote order not found');
+
+            return null;
+        }
+
+        $remoteOrderData = $remoteOrder->toStringArray();
+        $remoteTransactionId = sanitize_text_field($remoteOrderData['orderTransactionId'] ?? '');
+        $remoteMerchantReferenceId = sanitize_text_field(
+            $remoteOrderData['merchantReferenceId'] ?? $remoteOrderData['merchantReference'] ?? ''
+        );
+        $remoteCurrency = strtoupper(sanitize_text_field($remoteOrderData['currency'] ?? ''));
+        $remoteAmount = $remoteOrderData['totalAmount'] ?? null;
+
+        if (
+            $remoteTransactionId === '' ||
+            !hash_equals($transactionId, $remoteTransactionId) ||
+            $remoteMerchantReferenceId === '' ||
+            !hash_equals($merchantReferenceId, $remoteMerchantReferenceId) ||
+            $remoteCurrency === '' ||
+            $remoteCurrency !== strtoupper($order->get_currency()) ||
+            $remoteAmount === null ||
+            !$this->amountsMatch($order->get_total(), $remoteAmount)
+        ) {
+            $this->logger->error(__FILE__, __LINE__, 'Payment verification failed: order details mismatch');
+
+            return null;
+        }
+
+        $paymentStatus = $status->getCurrent();
+
+        return $paymentStatus === PaymentStatus::UNKNOWN_STATUS ? null : $paymentStatus;
+    }
+
+    private function amountsMatch(string $localAmount, mixed $remoteAmount): bool
+    {
+        if (!is_scalar($remoteAmount) || !is_numeric((string)$remoteAmount)) {
+            return false;
+        }
+
+        $precision = wc_get_price_decimals();
+
+        return wc_format_decimal($localAmount, $precision) ===
+            wc_format_decimal((string)$remoteAmount, $precision);
+    }
+
+    /** @return string[] */
+    private function getTerminalOrderStatuses(): array
+    {
+        return ['completed', 'cancelled', 'failed', 'refunded'];
     }
 
     /** @throws Exception */

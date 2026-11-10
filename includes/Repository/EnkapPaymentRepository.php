@@ -77,6 +77,21 @@ final class EnkapPaymentRepository
         return $result ?: null;
     }
 
+    public function getPaymentByMerchantReferenceId(string $merchantReferenceId): ?object
+    {
+        $table = esc_sql($this->getTableName());
+
+        // phpcs:disable WordPress.DB.PreparedSQL.NotPrepared
+        $query = $this->db->prepare(
+            'SELECT * FROM ' . $table . ' WHERE merchant_reference_id = %s LIMIT 1',
+            $merchantReferenceId
+        );
+        $result = $this->db->get_row($query);
+        // phpcs:enable WordPress.DB.PreparedSQL.NotPrepared
+
+        return $result ?: null;
+    }
+
     public function getWcOrderIdByMerchantReferenceId(string $merchantReferenceId): ?int
     {
         if (!wp_is_uuid($merchantReferenceId)) {

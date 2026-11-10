@@ -256,6 +256,13 @@ if (!class_exists(Plugin::class)) {
 
         public static function processWebhookStatus($order, PaymentStatus $status, string $merchantReferenceId): void
         {
+            if (
+                $order instanceof WC_Order &&
+                $order->has_status(['completed', 'cancelled', 'failed', 'refunded'])
+            ) {
+                return;
+            }
+
             match ($status) {
                 PaymentStatus::IN_PROGRESS_STATUS,
                 PaymentStatus::CREATED_STATUS,
