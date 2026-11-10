@@ -3,7 +3,7 @@ Contributors: camoo, maviance
 Tags: Mobile Money, Orange Money, MTN Mobile Money, Express Union Mobile Money, Cameroon
 Requires at least: 6.7
 Requires Plugins: woocommerce
-Tested up to: 6.9
+Tested up to: 7.1
 Requires PHP: 8.2
 Stable tag: 1.1.2
 License: GPLv2 or later
@@ -88,6 +88,10 @@ More details can be found on the [documentation website](https://support.enkap.c
 * The Latest WordPress version.
 * PHP version 8.3 or greater.
 * MySQL version 8.0 or greater.
+
+= Compatibility =
+* WordPress tested up to 7.1.
+* WooCommerce tested up to 11.2.2.
 
 == Upgrade Notice ==
 
