@@ -10,6 +10,7 @@ namespace Camoo\Enkap\WooCommerce\Admin;
 
 use Automattic\WooCommerce\Internal\DataStores\Orders\CustomOrdersTableController;
 use Camoo\Enkap\WooCommerce\Plugin;
+use Camoo\Enkap\WooCommerce\Repository\EnkapPaymentRepository;
 use Enkap\OAuth\Lib\Helper;
 use Enkap\OAuth\Services\StatusService;
 use Throwable;
@@ -23,17 +24,22 @@ if (!class_exists(PluginAdmin::class)) {
     {
         protected static $instance = null;
 
-        protected $mainMenuId;
+        protected string $mainMenuId;
 
-        protected $author;
+        protected string $author;
 
-        protected $isRegistered;
+        protected bool $isRegistered;
+
+        private static EnkapPaymentRepository $paymentRepository;
 
         public function __construct()
         {
             $this->mainMenuId = 'wc-e-nkap';
             $this->author = 'wordpress@camoo.sarl';
             $this->isRegistered = false;
+            global $wpdb;
+
+            self::$paymentRepository = new EnkapPaymentRepository($wpdb);
         }
 
         public static function instance(): ?self
@@ -54,7 +60,6 @@ if (!class_exists(PluginAdmin::class)) {
             }
 
             $this->isRegistered = true;
-
 
             if (class_exists(CustomOrdersTableController::class)) {
                 // HPOS
@@ -150,7 +155,6 @@ if (!class_exists(PluginAdmin::class)) {
             Helper::exitOrDie();
         }
 
-        /** @param $order */
         public static function add_custom_order_status_actions_button(array $actions, $order): array
         {
             if ($order->get_payment_method() !== Plugin::WC_ENKAP_GATEWAY_ID) {
@@ -197,7 +201,7 @@ if (!class_exists(PluginAdmin::class)) {
             );
         }
 
-        public function display()
+        public function display(): void
         {
             echo 'Bonjour';
         }
@@ -231,21 +235,9 @@ if (!class_exists(PluginAdmin::class)) {
             }
         }
 
-        protected static function getPaymentByWcOrderId(int $wcOrderId)
+        protected static function getPaymentByWcOrderId(int $wcOrderId): ?object
         {
-            global $wpdb;
-
-            $db_prepare = $wpdb->prepare(
-                "SELECT * FROM `{$wpdb->prefix}wc_enkap_payments` WHERE `wc_order_id` = %s",
-                absint(wp_unslash($wcOrderId))
-            );
-            $payment = $wpdb->get_row($db_prepare);
-
-            if (!$payment) {
-                return null;
-            }
-
-            return $payment;
+            return self::$paymentRepository->getPaymentByWcOrderId(absint(wp_unslash($wcOrderId)));
         }
     }
 }

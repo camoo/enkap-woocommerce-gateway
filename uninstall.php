@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Uninstalling SmobilPay for e-commerce - Mobile Money Gateway for WooCommerce, deletes tables, and options.
  *
@@ -17,7 +18,8 @@ global $wpdb;
 /**
  * Delete plugin data for a single site
  */
-function enkap_delete_site_data(): void {
+function enkap_delete_site_data(): void
+{
     global $wpdb;
 
     delete_option('wp_wc_enkap_db_version');
@@ -26,7 +28,7 @@ function enkap_delete_site_data(): void {
     $options = $wpdb->get_col(
         $wpdb->prepare(
             "SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s",
-            'woocommerce_e_nkap%'
+            $wpdb->esc_like('woocommerce_e_nkap') . '%'
         )
     );
 
