@@ -59,7 +59,7 @@ class Install
     {
         global $wpdb;
         $tbl = 'wc_enkap_payments';
-        $tables[] = $wpdb->tb_prefix . $tbl;
+        $tables[] = $wpdb->prefix . $tbl;
         delete_option('wp_wc_enkap_db_version');
         delete_option('woocommerce_' . Plugin::WC_ENKAP_GATEWAY_ID . '_settings');
 

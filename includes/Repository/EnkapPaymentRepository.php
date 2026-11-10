@@ -131,42 +131,22 @@ final class EnkapPaymentRepository
 
     public function updateStatusIfChanged(string $merchantReferenceId, string $newStatus, ?string $remoteIp = null): bool
     {
-        $table = esc_sql($this->getTableName());
-
-        // phpcs:disable WordPress.DB.PreparedSQL.NotPrepared
-        $query = $this->db->prepare(
-            'SELECT `status` FROM ' . $table . ' WHERE merchant_reference_id = %s LIMIT 1',
-            $merchantReferenceId
-        );
-
-        $current = $this->db->get_var($query);
-        // phpcs:enable WordPress.DB.PreparedSQL.NotPrepared
         $normalizedNewStatus = sanitize_title($newStatus);
 
-        if ($current === $normalizedNewStatus) {
-            $this->getLogger()->log(
-                'warning',
-                sprintf('Merchant reference id "%s" is already in use.', $merchantReferenceId),
-                [
-                    'source' => Plugin::WC_ENKAP_GATEWAY_ID,
-                    'backtrace' => [
-                        [
-                            'file' => __FILE__,
-                            'line' => __LINE__,
-                            'function' => __FUNCTION__,
-                            'class' => __CLASS__,
-                        ],
-                    ],
-                ]
-            );
-
-            return false;
-        }
-
         try {
-            $this->updateStatus($merchantReferenceId, $normalizedNewStatus, $remoteIp);
+            $changed = $this->updateStatus($merchantReferenceId, $normalizedNewStatus, $remoteIp);
 
-            return true;
+            if (!$changed) {
+                $this->getLogger()->log(
+                    'info',
+                    sprintf('Merchant reference id "%s" was already updated or was not found.', $merchantReferenceId),
+                    [
+                        'source' => Plugin::WC_ENKAP_GATEWAY_ID,
+                    ]
+                );
+            }
+
+            return $changed;
         } catch (RepositoryException $exception) {
             $this->getLogger()->log(
                 'error',
@@ -181,31 +161,61 @@ final class EnkapPaymentRepository
         }
     }
 
-    private function updateStatus(string $merchantReferenceId, string $status, ?string $remoteIp = null): void
+    public function resetStatusIfCurrent(string $merchantReferenceId, string $currentStatus): void
     {
-        $data = [
-            'status_date' => current_time('mysql'),
-            'status' => $status,
-        ];
+        $table = esc_sql($this->getTableName());
+        $status = sanitize_title($currentStatus);
 
-        $formats = ['%s', '%s'];
+        // Only roll back our own claim. A newer concurrent terminal transition must win.
+        // phpcs:disable WordPress.DB.PreparedSQL.NotPrepared
+        $query = $this->db->prepare(
+            'UPDATE ' . $table .
+            ' SET status_date = %s, status = NULL WHERE merchant_reference_id = %s AND `status` = %s',
+            current_time('mysql'),
+            $merchantReferenceId,
+            $status
+        );
+        $result = $this->db->query($query);
+        // phpcs:enable WordPress.DB.PreparedSQL.NotPrepared
+
+        if ($result === false || $this->db->last_error) {
+            throw new RepositoryException('Failed to reset payment status.');
+        }
+    }
+
+    private function updateStatus(string $merchantReferenceId, string $status, ?string $remoteIp = null): bool
+    {
+        $table = esc_sql($this->getTableName());
+        $set = 'status_date = %s, status = %s';
+        $arguments = [current_time('mysql'), $status];
 
         if ($remoteIp !== null) {
-            $data['remote_ip'] = $remoteIp;
-            $formats[] = '%s';
+            $set .= ', remote_ip = %s';
+            $arguments[] = $remoteIp;
         }
 
-        $result = $this->db->update(
-            esc_sql($this->getTableName()),
-            $data,
-            ['merchant_reference_id' => $merchantReferenceId],
-            $formats,
-            ['%s']
+        $arguments[] = $merchantReferenceId;
+        $arguments[] = $status;
+
+        // Keep the compare-and-update in one SQL statement. Callback retries can arrive
+        // concurrently, so a SELECT followed by UPDATE would allow both requests through.
+        // Terminal payment states are also immutable to prevent stale callbacks from
+        // changing a completed/canceled/failed payment afterward.
+        // phpcs:disable WordPress.DB.PreparedSQL.NotPrepared
+        $query = $this->db->prepare(
+            'UPDATE ' . $table . ' SET ' . $set .
+            ' WHERE merchant_reference_id = %s AND (`status` IS NULL OR (' .
+            '`status` NOT IN (\'confirmed\', \'canceled\', \'failed\') AND `status` <> %s))',
+            ...$arguments
         );
+        $result = $this->db->query($query);
+        // phpcs:enable WordPress.DB.PreparedSQL.NotPrepared
 
         if ($result === false || $this->db->last_error) {
             throw new RepositoryException('Failed to update payment status.');
         }
+
+        return $result > 0;
     }
 
     private function getTableName(): string

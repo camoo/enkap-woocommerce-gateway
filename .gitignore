@@ -1,5 +1,4 @@
 vendor
 .DS
 .php_cs.cache
-composer.lock
 .php-cs-fixer.cache
